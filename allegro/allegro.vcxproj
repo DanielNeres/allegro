@@ -138,9 +138,34 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <None Include="packages.config" />
+    <None Include="Tutorial1\Tutorial 1\snd_explosao_asteroide.ogg" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <Media Include="Tutorial1\Tutorial 1\snd_hit.wav" />
+    <Media Include="Tutorial1\Tutorial 1\snd_melhoria.wav" />
+    <Media Include="Tutorial1\Tutorial 1\snd_projetil.wav" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="Tutorial1\Tutorial 1\spr_asteroide_grande.png" />
+    <Image Include="Tutorial1\Tutorial 1\spr_asteroide_medio_1.png" />
+    <Image Include="Tutorial1\Tutorial 1\spr_asteroide_medio_2.png" />
+    <Image Include="Tutorial1\Tutorial 1\spr_asteroide_medio_3.png" />
+    <Image Include="Tutorial1\Tutorial 1\spr_asteroide_pequeno_1.png" />
+    <Image Include="Tutorial1\Tutorial 1\spr_asteroide_pequeno_2.png" />
+    <Image Include="Tutorial1\Tutorial 1\spr_asteroide_pequeno_3.png" />
+    <Image Include="Tutorial1\Tutorial 1\spr_detritos.png" />
+    <Image Include="Tutorial\spr_escudo.png" />
+    <Image Include="Tutorial1\Tutorial 1\spr_estrelas.png" />
+    <Image Include="Tutorial1\Tutorial 1\spr_melhoria_escudo.png" />
+    <Image Include="Tutorial1\Tutorial 1\spr_melhoria_projetil.png" />
+    <Image Include="Tutorial1\Tutorial 1\spr_nave_movendo.png" />
+    <Image Include="tutorial1\spr_nave_parada.png">
+      <DeploymentContent>true</DeploymentContent>
+    </Image>
+    <Image Include="Tutorial1\Tutorial 1\spr_nave_projetil.png" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

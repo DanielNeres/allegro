@@ -13,13 +13,84 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="Arquivos de Recurso\src">
+      <UniqueIdentifier>{26387b8c-dcee-44fa-9c1a-0ba31894a917}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Arquivos de Recurso\conteudo">
+      <UniqueIdentifier>{557c1da7-6aea-4f90-95cc-6b4889ca24fc}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Arquivos de Recurso\conteudo\sprites">
+      <UniqueIdentifier>{34b757f4-cae3-4b3d-bcdd-510d71b2d5e6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Arquivos de Recurso\conteudo\sons">
+      <UniqueIdentifier>{9dddf741-dced-4ee6-95b0-6e637138dd79}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
+    <None Include="Tutorial1\Tutorial 1\snd_explosao_asteroide.ogg" />
+  </ItemGroup>
+  <ItemGroup>
+    <Media Include="Tutorial1\Tutorial 1\snd_hit.wav">
+      <Filter>Arquivos de Recurso</Filter>
+    </Media>
+    <Media Include="Tutorial1\Tutorial 1\snd_melhoria.wav">
+      <Filter>Arquivos de Recurso</Filter>
+    </Media>
+    <Media Include="Tutorial1\Tutorial 1\snd_projetil.wav">
+      <Filter>Arquivos de Recurso</Filter>
+    </Media>
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="Tutorial1\Tutorial 1\spr_asteroide_grande.png">
+      <Filter>Arquivos de Recurso</Filter>
+    </Image>
+    <Image Include="Tutorial1\Tutorial 1\spr_asteroide_medio_1.png">
+      <Filter>Arquivos de Recurso</Filter>
+    </Image>
+    <Image Include="Tutorial1\Tutorial 1\spr_asteroide_medio_2.png">
+      <Filter>Arquivos de Recurso</Filter>
+    </Image>
+    <Image Include="Tutorial1\Tutorial 1\spr_asteroide_medio_3.png">
+      <Filter>Arquivos de Recurso</Filter>
+    </Image>
+    <Image Include="Tutorial1\Tutorial 1\spr_asteroide_pequeno_1.png">
+      <Filter>Arquivos de Recurso</Filter>
+    </Image>
+    <Image Include="Tutorial1\Tutorial 1\spr_asteroide_pequeno_2.png">
+      <Filter>Arquivos de Recurso</Filter>
+    </Image>
+    <Image Include="Tutorial1\Tutorial 1\spr_asteroide_pequeno_3.png">
+      <Filter>Arquivos de Recurso</Filter>
+    </Image>
+    <Image Include="Tutorial1\Tutorial 1\spr_detritos.png">
+      <Filter>Arquivos de Recurso</Filter>
+    </Image>
+    <Image Include="Tutorial\spr_escudo.png">
+      <Filter>Arquivos de Recurso</Filter>
+    </Image>
+    <Image Include="Tutorial1\Tutorial 1\spr_estrelas.png">
+      <Filter>Arquivos de Recurso</Filter>
+    </Image>
+    <Image Include="Tutorial1\Tutorial 1\spr_melhoria_escudo.png">
+      <Filter>Arquivos de Recurso</Filter>
+    </Image>
+    <Image Include="Tutorial1\Tutorial 1\spr_melhoria_projetil.png">
+      <Filter>Arquivos de Recurso</Filter>
+    </Image>
+    <Image Include="Tutorial1\Tutorial 1\spr_nave_movendo.png">
+      <Filter>Arquivos de Recurso</Filter>
+    </Image>
+    <Image Include="tutorial1\spr_nave_parada.png">
+      <Filter>Arquivos de Recurso</Filter>
+    </Image>
+    <Image Include="Tutorial1\Tutorial 1\spr_nave_projetil.png">
+      <Filter>Arquivos de Recurso</Filter>
+    </Image>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.c">
-      <Filter>Arquivos de Recurso</Filter>
+      <Filter>Arquivos de Recurso\src</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>
