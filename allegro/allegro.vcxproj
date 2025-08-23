@@ -165,7 +165,7 @@
     <Image Include="tutorial1\spr_nave_parada.png">
       <DeploymentContent>true</DeploymentContent>
     </Image>
-    <Image Include="Tutorial1\Tutorial 1\spr_nave_projetil.png" />
+    <Image Include="tutorial1\spr_nave_projetil.png" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

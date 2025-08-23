@@ -11,39 +11,83 @@
 #define SPR_NAVE_T_H 32   // altura de um frame
 #define FRAME_COUNT 5 // qtd de frames no spritespr_nave
 #define SPEED 7     // velocidade no eixo x
+#define SPR_BALA_T_W 13   // largura de um frame da sprite da bala
+#define SPR_BALA_T_H 5   // altura de um frame da sprite da bala
+#define BALA_SPEED 14 // velocidade da bala
+#define TEMPO_ENTRE_BALAS 0.2 // tempo minimo entre tiros em segundos
+
+typedef struct{
+    float x, y;
+    float angulo;
+}Bala;
+
+typedef struct no{
+    Bala bala;
+    struct no* prox;
+}No_Bala;
+
+void insere_bala(No_Bala** lista, float x, float y, float angle){
+    No_Bala* novo = (No_Bala*)malloc(sizeof(No_Bala));
+    novo->bala.x = x;
+    novo->bala.y = y;
+    novo->bala.angulo = angle;
+    novo->prox = *lista;
+    *lista = novo;
+}
+
+void remover_bala(No_Bala **ant, No_Bala **atual) {
+    if (*ant == NULL) { // Se for o primeiro nó da lista
+        *atual = (*atual)->prox;
+        free(*ant);
+        *ant = *atual;
+    } else if (*atual != NULL){
+        No_Bala *temp = *atual;
+        (*ant)->prox = (*atual)->prox;
+        *atual = (*atual)->prox;
+        free(temp);
+    }
+}
 
 
 enum KEYS { UP, LEFT, RIGHT, SPACE, KEY_COUNT };
 
 int main() {
+
+	// Inicializa Allegro e componentes (padrão)
     if (!al_init()) {
         printf("Erro ao inicializar Allegro!\n");
         return -1;
     }
 
+	// Inicializa imagens para carregar sprites
     if (!al_init_image_addon()) {
         printf("Erro ao inicializar add-on de imagem!\n");
         return -1;
     }
 
+	// Inicializa a verificação de eventos do teclado
     if (!al_install_keyboard()) {
         printf("Erro ao inicializar teclado!\n");
         return -1;
     }
 
+	// Inicializa a tela (padrão)
     ALLEGRO_DISPLAY* display = al_create_display(SCREEN_W, SCREEN_H);
     if (!display) {
         printf("Erro ao criar janela!\n");
         return -1;
     }
 
+	// define os eventos que ser��o verificados e o timer (padrão)
     ALLEGRO_TIMER* timer = al_create_timer(1.0 / 60.0); // 60 FPS
     ALLEGRO_EVENT_QUEUE* queue = al_create_event_queue();
 
+	// Registra os eventos que ser��o verificados (padrão tirando o keyboard, so precisa se usar a biblioteca do teclado)
     al_register_event_source(queue, al_get_display_event_source(display));
     al_register_event_source(queue, al_get_timer_event_source(timer));
     al_register_event_source(queue, al_get_keyboard_event_source());
 
+	// Carrega a sprites
     ALLEGRO_BITMAP* spr_nave_movendo = al_load_bitmap("tutorial1/spr_nave_movendo.png");
     if (!spr_nave_movendo) {
         printf("Erro ao carregar spritespr_nave!\n");
@@ -55,15 +99,24 @@ int main() {
         printf("Erro ao carregar spritespr_nave!\n");
         return -1;
     }
+
+    ALLEGRO_BITMAP* spr_nave_projetil = al_load_bitmap("tutorial1/spr_nave_projetil.png");
+    if (!spr_nave_projetil) {
+        printf("Erro ao carregar spritespr_nave!\n");
+        return -1;
+    }
     
-    bool keys[KEY_COUNT] = { false };
-    float x = SCREEN_W/2, y = SCREEN_H/2;
-    int frame = 0;
-    double frame_time = 0;
+    bool keys[KEY_COUNT] = { false }; // array para armazenar o estado das teclas
+    float x = SCREEN_W/2, y = SCREEN_H/2; 
+    int frame = 0; // frame atual da anima��o
+    double frame_time = 0; // tempo acumulado desde a troca do frame
     double frame_delay = 0.25; // tempo entre frames da anima��o em segundos
+    float time_bala = TEMPO_ENTRE_BALAS; // tempo desde o ultimo tiro
     float angulo = 0;
 	int escala = 4;
     float rotacao_por_segundo = 4.0 / 60.0;
+	No_Bala* lista_balas = NULL; // Lista encadeada para armazenar as balas
+
 
     al_start_timer(timer);
 
@@ -76,6 +129,7 @@ int main() {
             running = 0;
         }
         else if (ev.type == ALLEGRO_EVENT_KEY_DOWN) {
+            // logica para verificar quais teclas foram ou estão apertadas
             switch (ev.keyboard.keycode) {
             case ALLEGRO_KEY_ESCAPE: running = false; break;
             case ALLEGRO_KEY_UP:     keys[UP] = true; break;
@@ -84,6 +138,7 @@ int main() {
             case ALLEGRO_KEY_SPACE:  keys[SPACE] = true; break;
             }
         } else if (ev.type == ALLEGRO_EVENT_KEY_UP) {
+            // logica para verificar quais teclas não estão mais apertadas
             switch (ev.keyboard.keycode) {
             case ALLEGRO_KEY_UP:     keys[UP] = false; break;
             case ALLEGRO_KEY_LEFT:   keys[LEFT] = false; break;
@@ -92,15 +147,16 @@ int main() {
             }
         } 
         if (ev.type == ALLEGRO_EVENT_TIMER) {
-            // Atualiza frame da sprite (anima��o)
+            // Atualiza frame da sprite (anima��o da nave)
             frame_time += 1.0 / 60.0;
+			time_bala += 1.0 / 60.0;
             if (frame_time >= frame_delay) {
                 frame = (frame + 1) % FRAME_COUNT;
                 frame_time = 0;
             } 
 
             // Limpa tela
-            al_clear_to_color(al_map_rgb(0, 0, 0));
+            al_clear_to_color(al_map_rgb(255, 255, 255));
 
             
             if (keys[LEFT]) {
@@ -113,16 +169,47 @@ int main() {
 
 				if (angulo >= 2 * ALLEGRO_PI) angulo = 0;
             }
+            if (keys[SPACE] && time_bala >= TEMPO_ENTRE_BALAS) {
+                time_bala = 0;
+				// inicia bala na lista
+                insere_bala(&lista_balas, x + 25*cos(angulo), y + 25*sin(angulo), angulo);
+			}
+
+            // Atualiza e desenha balas
+            No_Bala* ant = NULL;
+            No_Bala* atual = lista_balas;
+            while (atual != NULL) {
+                // Atualiza posi����o da bala
+                atual->bala.x += BALA_SPEED * cos(atual->bala.angulo);
+                atual->bala.y += BALA_SPEED * sin(atual->bala.angulo);
+                // Desenha a bala
+                al_draw_tinted_scaled_rotated_bitmap_region(spr_nave_projetil, 0, 0, SPR_BALA_T_W, SPR_BALA_T_H,
+                    al_map_rgb(255, 255, 255), SPR_BALA_T_W / 2, SPR_BALA_T_H / 2,
+                    (int)atual->bala.x, (int)atual->bala.y, escala, escala, atual->bala.angulo, 0);
+                // Remove a bala se sair da tela
+                if (atual->bala.x < -SPR_BALA_T_W || atual->bala.x > SCREEN_W || atual->bala.y < -SPR_BALA_T_H || atual->bala.y > SCREEN_H) {
+                    remover_bala(&ant, &atual);
+                }
+                else {
+                    ant = atual;
+                    atual = atual->prox;
+                }
+            }
+
+
             if (keys[UP]) {
-                // Atualiza posi��o
+                // Atualiza posi��o (indo para frente na dire����o do angulo)
                 x += SPEED * cos(angulo);
                 y += SPEED * sin(angulo);
 
+
+                // Mantem nave dentro da tela (teletransporte para o lado oposto)
                 if (x > SCREEN_W) x = -SPR_NAVE_T_W;
 				else if (x < -SPR_NAVE_T_W) x = SCREEN_W;
                 if (y > SCREEN_H) y = -SPR_NAVE_T_H;
                 else if (y < -SPR_NAVE_T_H) y = SCREEN_H;
 
+                // Desenha nave em movimento
                 al_draw_tinted_scaled_rotated_bitmap_region(spr_nave_movendo, 
 				frame * SPR_NAVE_T_W, 0, SPR_NAVE_T_W, SPR_NAVE_T_H, // regi�o do sprite a ser desenhada 
                 al_map_rgb(255, 255, 255), // cor de tintura (branco = sem altera��o)
@@ -133,8 +220,12 @@ int main() {
             } else {
                 // Desenha nave parada
                 al_draw_tinted_scaled_rotated_bitmap_region(spr_nave_parada, 0, 0, SPR_NAVE_T_H, SPR_NAVE_T_H,
-                al_map_rgb(255, 255, 255), SPR_NAVE_T_H/2 - 7, SPR_NAVE_T_H/2, (int)x, (int)y, escala, escala, angulo, 0);
+                al_map_rgb(255, 255, 255), SPR_NAVE_T_H/2 - 7, SPR_NAVE_T_H/2, (int)x, (int)y, escala, escala, angulo, 0); // o -7 �� para centralizar a imagem, que n��o est�� perfeitamente alinhada
             }
+
+			
+
+            
 
             // Desenha apenas o frame atual
             //al_draw_bitmap_region(spr_nave, frame * SPR_NAVE_T_W, 0, SPR_NAVE_T_W, SPR_NAVE_T_H, x, 10, 0);
@@ -148,6 +239,7 @@ int main() {
         }
     }
 
+    // Libera recursos (padrão) 
     al_destroy_bitmap(spr_nave_movendo);
     al_destroy_bitmap(spr_nave_parada);
     al_destroy_display(display);
