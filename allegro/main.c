@@ -4,6 +4,7 @@
 #include <allegro5/allegro_audio.h>
 #include <allegro5/allegro_acodec.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <math.h>
 #include <stdbool.h>    
 
@@ -17,22 +18,62 @@
 #define SPR_BALA_T_H 5   // altura de um frame da sprite da bala
 #define BALA_SPEED 14 // velocidade da bala
 #define TEMPO_ENTRE_BALAS 0.2 // tempo minimo entre tiros em segundos
+#define SPR_METEORO_G_T_W 48   // largura de um frame da sprite do meteoro grande
+#define SPR_METEORO_G_T_H 48   // altura de um frame da sprite do meteoro grande
+#define METEORO_G_SPEED 5 // velocidade do meteoro grande
+#define METEORO_G_VIDA 3 // vida do meteoro grande
+#define METEORO_G_VEL_ROTACAO 0.06 // velocidade de rotação do meteoro grande
+
 
 typedef struct{
     float x, y;
     float angulo;
-}OBJ;
+}Bala;
 
-typedef struct no{
-    OBJ bala;
-    struct no* prox;
-}No;
+typedef struct{
+    float x, y;
+    float angulo;
+    float direcao_x, direcao_y;
+    float vel_rotacao;
+    short vida;
+    short tipo; // 1-grande, 2-medio, 3-pequeno
+}Meteoro;
 
-void insere_bala(No** lista, float x, float y, float angle){
-    No* novo = (No*)malloc(sizeof(No));
+typedef struct no_bala{
+    Bala bala;
+    struct no_bala* prox;
+}No_Bala;
+
+typedef struct no_meteoro{
+    Meteoro meteoro;
+    struct no_meteoro* prox;
+}No_Meteoro;
+
+
+void insere_bala(No_Bala** lista, float x, float y, float angulo){
+    No_Bala* novo = (No_Bala*)malloc(sizeof(No_Bala));
     novo->bala.x = x;
     novo->bala.y = y;
-    novo->bala.angulo = angle;
+    novo->bala.angulo = angulo;
+    novo->prox = *lista;
+    *lista = novo;
+}
+
+void insere_meteoro(No_Bala** lista, float x, float y, float angulo, short tipo, short vida){
+    No_Meteoro* novo = (No_Meteoro*)malloc(sizeof(No_Meteoro));
+    novo->meteoro.x = x;
+    novo->meteoro.y = y;
+    novo->meteoro.angulo = angulo;
+    novo->meteoro.tipo = tipo;
+    novo->meteoro.vida = vida;
+    // defini direcao com base em um angulo aleatorio
+    float ang = (float)(rand() % 360) * (float)(ALLEGRO_PI / 180.0);
+	printf("Angulo meteoro: %f\n", ang);
+    novo->meteoro.direcao_x = cos(ang);
+    novo->meteoro.direcao_y = sin(ang);
+    // define uma velocidade de rotação aleatoria
+	novo->meteoro.vel_rotacao = ((float)(rand() % 100) / 100.0) * METEORO_G_VEL_ROTACAO - METEORO_G_VEL_ROTACAO; // entre -METEORO_G_VEL_ROTACAO e METEORO_G_VEL_ROTACAO
+	printf("Velocidade de rotacao meteoro: %f\n", novo->meteoro.vel_rotacao);
     novo->prox = *lista;
     *lista = novo;
 }
@@ -117,6 +158,13 @@ int main() {
         printf("Erro ao carregar spritespr_nave!\n");
         return -1;
     }
+
+	ALLEGRO_BITMAP* spr_meteoro_g = al_load_bitmap("tutorial1/spr_asteroide_grande.png");
+    if (!spr_meteoro_g) {
+        printf("Erro ao carregar spritespr_meteoro_g!\n");
+        return -1;
+	}
+
     
     bool keys[KEY_COUNT] = { false }; // array para armazenar o estado das teclas
     float x = SCREEN_W/2, y = SCREEN_H/2; 
@@ -127,10 +175,15 @@ int main() {
     float angulo = 0;
 	int escala = 4;
     float rotacao_por_segundo = 4.0 / 60.0;
-	No* lista_balas = NULL; // Lista encadeada para armazenar as balas
+	No_Bala* lista_balas = NULL; // Lista encadeada para armazenar as balas
+	No_Bala* lista_meteoros = NULL; // Lista encadeada para armazenar os meteoros
 
 
     al_start_timer(timer);
+
+	// insere 2 meteoros grandes
+	insere_meteoro(&lista_meteoros, 100, 100, 0, 1, METEORO_G_VIDA);
+    insere_meteoro(&lista_meteoros, 400, 400, 0, 1, METEORO_G_VIDA);
 
     bool running = true;
     while (running) {
@@ -190,8 +243,8 @@ int main() {
 			}
 
             // Atualiza e desenha balas
-            No* ant = NULL;
-            No* atual = lista_balas;
+            No_Bala* ant = NULL;
+            No_Bala* atual = lista_balas;
             while (atual != NULL) {
                 // Atualiza posi����o da bala
                 atual->bala.x += BALA_SPEED * cos(atual->bala.angulo);
@@ -202,7 +255,7 @@ int main() {
                     (int)atual->bala.x, (int)atual->bala.y, escala, escala, atual->bala.angulo, 0);
                 // Remove a bala se sair da tela
                 if (atual->bala.x < -SPR_BALA_T_W || atual->bala.x > SCREEN_W || atual->bala.y < -SPR_BALA_T_H || atual->bala.y > SCREEN_H) {
-                    No* temp = atual;
+                    No_Bala* temp = atual;
                     if (ant == NULL) {
                         lista_balas = atual->prox;
                         atual = lista_balas;
@@ -218,6 +271,26 @@ int main() {
                 }
             }
 
+			// Atualiza e desenha meteoros grandes
+			No_Meteoro* ant_m = NULL;
+			No_Meteoro* atual_m = lista_meteoros;
+            while (atual_m != NULL) {
+                // Atualiza posi����o do meteoro
+                atual_m->meteoro.x += METEORO_G_SPEED * atual_m->meteoro.direcao_x;
+                atual_m->meteoro.y += METEORO_G_SPEED * atual_m->meteoro.direcao_y;
+                atual_m->meteoro.angulo += atual_m->meteoro.vel_rotacao;
+                // Mantem meteoro dentro da tela (teletransporte para o lado oposto)
+                if (atual_m->meteoro.x > SCREEN_W) atual_m->meteoro.x = -SPR_METEORO_G_T_W;
+                else if (atual_m->meteoro.x < -SPR_METEORO_G_T_W) atual_m->meteoro.x = SCREEN_W;
+                if (atual_m->meteoro.y > SCREEN_H) atual_m->meteoro.y = -SPR_METEORO_G_T_H;
+                else if (atual_m->meteoro.y < -SPR_METEORO_G_T_H) atual_m->meteoro.y = SCREEN_H;
+                // Desenha o meteoro
+                al_draw_tinted_scaled_rotated_bitmap_region(spr_meteoro_g, 0, 0, SPR_METEORO_G_T_W, SPR_METEORO_G_T_H,
+                    al_map_rgb(255, 255, 255), SPR_METEORO_G_T_W / 2, SPR_METEORO_G_T_H / 2,
+                    (int)atual_m->meteoro.x, (int)atual_m->meteoro.y, escala, escala, atual_m->meteoro.angulo, 0);
+                ant_m = atual_m;
+                atual_m = atual_m->prox;
+            }
 
             if (keys[UP]) {
                 // Atualiza posi��o (indo para frente na dire����o do angulo)
@@ -257,9 +330,11 @@ int main() {
         }
     }
 
-    // Libera recursos (padrão) 
+    // Libera os recursos criados (padrão) 
     al_destroy_bitmap(spr_nave_movendo);
     al_destroy_bitmap(spr_nave_parada);
+	al_destroy_bitmap(spr_nave_projetil);
+	al_destroy_bitmap(spr_meteoro_g);
     al_destroy_display(display);
     al_destroy_timer(timer);
     al_destroy_event_queue(queue);

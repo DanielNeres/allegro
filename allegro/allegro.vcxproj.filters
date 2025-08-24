@@ -42,7 +42,7 @@
     </Media>
   </ItemGroup>
   <ItemGroup>
-    <Image Include="Tutorial1\Tutorial 1\spr_asteroide_grande.png">
+    <Image Include="tutorial1\spr_asteroide_grande.png">
       <Filter>Arquivos de Recurso</Filter>
     </Image>
     <Image Include="Tutorial1\Tutorial 1\spr_asteroide_medio_1.png">
@@ -78,7 +78,7 @@
     <Image Include="Tutorial1\Tutorial 1\spr_melhoria_projetil.png">
       <Filter>Arquivos de Recurso</Filter>
     </Image>
-    <Image Include="Tutorial1\Tutorial 1\spr_nave_movendo.png">
+    <Image Include="tutorial1\spr_nave_movendo.png">
       <Filter>Arquivos de Recurso</Filter>
     </Image>
     <Image Include="tutorial1\spr_nave_parada.png">
