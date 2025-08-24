@@ -21,35 +21,21 @@
 typedef struct{
     float x, y;
     float angulo;
-}Bala;
+}OBJ;
 
 typedef struct no{
-    Bala bala;
+    OBJ bala;
     struct no* prox;
-}No_Bala;
+}No;
 
-void insere_bala(No_Bala** lista, float x, float y, float angle){
-    No_Bala* novo = (No_Bala*)malloc(sizeof(No_Bala));
+void insere_bala(No** lista, float x, float y, float angle){
+    No* novo = (No*)malloc(sizeof(No));
     novo->bala.x = x;
     novo->bala.y = y;
     novo->bala.angulo = angle;
     novo->prox = *lista;
     *lista = novo;
 }
-
-void remover_bala(No_Bala **ant, No_Bala **atual) {
-    if (*ant == NULL) { // Se for o primeiro nó da lista
-        *atual = (*atual)->prox;
-        free(*ant);
-        *ant = *atual;
-    } else if (*atual != NULL){
-        No_Bala *temp = *atual;
-        (*ant)->prox = (*atual)->prox;
-        *atual = (*atual)->prox;
-        free(temp);
-    }
-}
-
 
 enum KEYS { UP, LEFT, RIGHT, SPACE, KEY_COUNT };
 
@@ -141,7 +127,7 @@ int main() {
     float angulo = 0;
 	int escala = 4;
     float rotacao_por_segundo = 4.0 / 60.0;
-	No_Bala* lista_balas = NULL; // Lista encadeada para armazenar as balas
+	No* lista_balas = NULL; // Lista encadeada para armazenar as balas
 
 
     al_start_timer(timer);
@@ -204,8 +190,8 @@ int main() {
 			}
 
             // Atualiza e desenha balas
-            No_Bala* ant = NULL;
-            No_Bala* atual = lista_balas;
+            No* ant = NULL;
+            No* atual = lista_balas;
             while (atual != NULL) {
                 // Atualiza posi����o da bala
                 atual->bala.x += BALA_SPEED * cos(atual->bala.angulo);
@@ -216,7 +202,15 @@ int main() {
                     (int)atual->bala.x, (int)atual->bala.y, escala, escala, atual->bala.angulo, 0);
                 // Remove a bala se sair da tela
                 if (atual->bala.x < -SPR_BALA_T_W || atual->bala.x > SCREEN_W || atual->bala.y < -SPR_BALA_T_H || atual->bala.y > SCREEN_H) {
-                    remover_bala(&ant, &atual);
+                    No* temp = atual;
+                    if (ant == NULL) {
+                        lista_balas = atual->prox;
+                        atual = lista_balas;
+                    } else {
+                        ant->prox = atual->prox;
+                        atual = ant->prox;
+                    }
+                    free(temp);
                 }
                 else {
                     ant = atual;
