@@ -1,6 +1,8 @@
 #include <allegro5/allegro.h>
 #include <allegro5/allegro_image.h>
 #include <allegro5/allegro_primitives.h>
+#include <allegro5/allegro_audio.h>
+#include <allegro5/allegro_acodec.h>
 #include <stdio.h>
 #include <math.h>
 #include <stdbool.h>    
@@ -65,11 +67,28 @@ int main() {
         return -1;
     }
 
-	// Inicializa a verificação de eventos do teclado
+	// Inicializa a instalação de eventos do teclado
     if (!al_install_keyboard()) {
         printf("Erro ao inicializar teclado!\n");
         return -1;
     }
+
+	// Inicializa a instalação do audio
+    if (!al_install_audio()) {
+        printf("Erro ao inicializar áudio!\n");
+        return -1;
+    }
+
+    if (!al_init_acodec_addon()) {
+        printf("Erro ao inicializar codecs de áudio!\n");
+        return -1;
+    }
+
+	if (!al_reserve_samples(16)) { // reserva 16 canais de som, ou seje, 16 sons podem ser reproduzidos ao mesmo tempo
+        printf("Erro ao reservar samples!\n");
+        return -1;
+    }
+
 
 	// Inicializa a tela (padrão)
     ALLEGRO_DISPLAY* display = al_create_display(SCREEN_W, SCREEN_H);
@@ -86,6 +105,13 @@ int main() {
     al_register_event_source(queue, al_get_display_event_source(display));
     al_register_event_source(queue, al_get_timer_event_source(timer));
     al_register_event_source(queue, al_get_keyboard_event_source());
+
+	// carrega som
+    ALLEGRO_SAMPLE* som_tiro = al_load_sample("tutorial1/snd_projetil.wav");
+    if (!som_tiro) {
+        printf("Erro ao carregar som!\n");
+        return -1;
+	}
 
 	// Carrega a sprites
     ALLEGRO_BITMAP* spr_nave_movendo = al_load_bitmap("tutorial1/spr_nave_movendo.png");
@@ -172,7 +198,9 @@ int main() {
             if (keys[SPACE] && time_bala >= TEMPO_ENTRE_BALAS) {
                 time_bala = 0;
 				// inicia bala na lista
-                insere_bala(&lista_balas, x + 25*cos(angulo), y + 25*sin(angulo), angulo);
+                insere_bala(&lista_balas, x + 30*cos(angulo), y + 30*sin(angulo), angulo);
+				// toca som
+				al_play_sample(som_tiro, 1.0, 0.0, 1.0, ALLEGRO_PLAYMODE_ONCE, NULL);
 			}
 
             // Atualiza e desenha balas
@@ -222,10 +250,6 @@ int main() {
                 al_draw_tinted_scaled_rotated_bitmap_region(spr_nave_parada, 0, 0, SPR_NAVE_T_H, SPR_NAVE_T_H,
                 al_map_rgb(255, 255, 255), SPR_NAVE_T_H/2 - 7, SPR_NAVE_T_H/2, (int)x, (int)y, escala, escala, angulo, 0); // o -7 �� para centralizar a imagem, que n��o est�� perfeitamente alinhada
             }
-
-			
-
-            
 
             // Desenha apenas o frame atual
             //al_draw_bitmap_region(spr_nave, frame * SPR_NAVE_T_W, 0, SPR_NAVE_T_W, SPR_NAVE_T_H, x, 10, 0);

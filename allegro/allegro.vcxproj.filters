@@ -57,7 +57,7 @@
     <Image Include="Tutorial1\Tutorial 1\spr_asteroide_pequeno_1.png">
       <Filter>Arquivos de Recurso</Filter>
     </Image>
-    <Image Include="Tutorial1\Tutorial 1\spr_asteroide_pequeno_2.png">
+    <Image Include="tutorial1\spr_asteroide_pequeno_2.png">
       <Filter>Arquivos de Recurso</Filter>
     </Image>
     <Image Include="Tutorial1\Tutorial 1\spr_asteroide_pequeno_3.png">
@@ -69,7 +69,7 @@
     <Image Include="Tutorial\spr_escudo.png">
       <Filter>Arquivos de Recurso</Filter>
     </Image>
-    <Image Include="Tutorial1\Tutorial 1\spr_estrelas.png">
+    <Image Include="tutorial1\spr_estrelas.png">
       <Filter>Arquivos de Recurso</Filter>
     </Image>
     <Image Include="Tutorial1\Tutorial 1\spr_melhoria_escudo.png">
