@@ -8,8 +8,8 @@
 #include <math.h>
 #include <stdbool.h>    
 
-#define SCREEN_W 1800 // tamanho da janela em largura
-#define SCREEN_H 1200 // tamanho da janela em altura
+#define SCREEN_W 2500 // tamanho da janela em largura
+#define SCREEN_H 1500 // tamanho da janela em altura
 #define SPR_NAVE_T_W 41   // largura de um frame da sprite
 #define SPR_NAVE_T_H 32   // altura de um frame
 #define FRAME_COUNT 5 // qtd de frames no spritespr_nave
@@ -17,7 +17,7 @@
 #define SPR_BALA_T_W 13   // largura de um frame da sprite da bala
 #define SPR_BALA_T_H 5   // altura de um frame da sprite da bala
 #define BALA_SPEED 14 // velocidade da bala
-#define TEMPO_ENTRE_BALAS 0.2 // tempo minimo entre tiros em segundos
+#define TEMPO_ENTRE_BALAS 0.45 // tempo minimo entre tiros em segundos
 #define SPR_METEORO_G_T_W 48   // largura de um frame da sprite do meteoro grande
 #define SPR_METEORO_G_T_H 48   // altura de um frame da sprite do meteoro grande
 #define METEORO_G_SPEED 5 // velocidade do meteoro grande
@@ -35,6 +35,7 @@ typedef struct{
     float angulo;
     float direcao_x, direcao_y;
     float vel_rotacao;
+	float vertives[8]; // numero de vertices do meteoro (para colisao mais precisa)
     short vida;
     short tipo; // 1-grande, 2-medio, 3-pequeno
 }Meteoro;
@@ -49,6 +50,28 @@ typedef struct no_meteoro{
     struct no_meteoro* prox;
 }No_Meteoro;
 
+typedef struct {
+    float x, y;
+    float lado;
+} Colision_Quadrado;
+
+
+float area(float x1, float y1, float x2, float y2, float x3, float y3) {
+    return fabs((x1*(y2-y3) + x2*(y3-y1) + x3*(y1-y2)) / 2.0);
+}
+
+bool pontoDentroTriangulo(float px, float py, float *tri) {
+    float A  = area(tri[0], tri[1], tri[2], tri[3], tri[4], tri[5]);
+    float A1 = area(px, py, tri[2], tri[3], tri[4], tri[5]);
+    float A2 = area(tri[0], tri[1], px, py, tri[4], tri[5]);
+    float A3 = area(tri[0], tri[1], tri[2], tri[3], px, py);
+    return fabs(A - (A1 + A2 + A3)) < 0.01;
+}
+
+bool pontoDentroQuadrado(float px, float py, float *quad) {
+    return (px >= quad[0] && px <= quad[4] &&
+            py >= quad[1] && py <= quad[5]);
+}
 
 void insere_bala(No_Bala** lista, float x, float y, float angulo){
     No_Bala* novo = (No_Bala*)malloc(sizeof(No_Bala));
@@ -59,10 +82,14 @@ void insere_bala(No_Bala** lista, float x, float y, float angulo){
     *lista = novo;
 }
 
-void insere_meteoro(No_Bala** lista, float x, float y, float angulo, short tipo, short vida){
+void insere_meteoro(No_Meteoro** lista, float x, float y, float angulo, short tipo, short vida){
     No_Meteoro* novo = (No_Meteoro*)malloc(sizeof(No_Meteoro));
     novo->meteoro.x = x;
     novo->meteoro.y = y;
+	novo->meteoro.vertives[0] = x - SPR_METEORO_G_T_W / 2; novo->meteoro.vertives[1] = y - SPR_METEORO_G_T_H / 2; // sup esq
+	novo->meteoro.vertives[2] = x + SPR_METEORO_G_T_W / 2; novo->meteoro.vertives[3] = y - SPR_METEORO_G_T_H / 2; // sup dir
+	novo->meteoro.vertives[4] = x + SPR_METEORO_G_T_W / 2; novo->meteoro.vertives[5] = y + SPR_METEORO_G_T_H / 2; // inf dir
+	novo->meteoro.vertives[6] = x - SPR_METEORO_G_T_W / 2; novo->meteoro.vertives[7] = y + SPR_METEORO_G_T_H / 2; // inf esq
     novo->meteoro.angulo = angulo;
     novo->meteoro.tipo = tipo;
     novo->meteoro.vida = vida;
@@ -116,6 +143,11 @@ int main() {
         return -1;
     }
 
+    if (!al_init_primitives_addon()) {
+        printf("Erro ao inicializar primitives!\n");
+        return -1;
+    }
+
 
 	// Inicializa a tela (padrão)
     ALLEGRO_DISPLAY* display = al_create_display(SCREEN_W, SCREEN_H);
@@ -158,6 +190,7 @@ int main() {
         printf("Erro ao carregar spritespr_nave!\n");
         return -1;
     }
+    
 
 	ALLEGRO_BITMAP* spr_meteoro_g = al_load_bitmap("tutorial1/spr_asteroide_grande.png");
     if (!spr_meteoro_g) {
@@ -173,10 +206,10 @@ int main() {
     double frame_delay = 0.25; // tempo entre frames da anima��o em segundos
     float time_bala = TEMPO_ENTRE_BALAS; // tempo desde o ultimo tiro
     float angulo = 0;
-	int escala = 4;
+	  int escala = 4;
     float rotacao_por_segundo = 4.0 / 60.0;
 	No_Bala* lista_balas = NULL; // Lista encadeada para armazenar as balas
-	No_Bala* lista_meteoros = NULL; // Lista encadeada para armazenar os meteoros
+	No_Meteoro* lista_meteoros = NULL; // Lista encadeada para armazenar os meteoros
 
 
     al_start_timer(timer);
@@ -184,6 +217,12 @@ int main() {
 	// insere 2 meteoros grandes
 	insere_meteoro(&lista_meteoros, 100, 100, 0, 1, METEORO_G_VIDA);
     insere_meteoro(&lista_meteoros, 400, 400, 0, 1, METEORO_G_VIDA);
+
+    Colision_Quadrado box_meteoro;
+    box_meteoro.x = 600;
+    box_meteoro.y = 400;
+    box_meteoro.lado = 100;
+
 
     bool running = true;
     while (running) {
@@ -221,7 +260,7 @@ int main() {
             } 
 
             // Limpa tela
-            al_clear_to_color(al_map_rgb(255, 255, 255));
+            al_clear_to_color(al_map_rgb(0, 0, 0));
 
             
             if (keys[LEFT]) {
@@ -279,6 +318,16 @@ int main() {
                 atual_m->meteoro.x += METEORO_G_SPEED * atual_m->meteoro.direcao_x;
                 atual_m->meteoro.y += METEORO_G_SPEED * atual_m->meteoro.direcao_y;
                 atual_m->meteoro.angulo += atual_m->meteoro.vel_rotacao;
+
+                if(atual_m->meteoro.angulo >= 2 * ALLEGRO_PI) atual_m->meteoro.angulo = 0;
+				else if (atual_m->meteoro.angulo < 0) atual_m->meteoro.angulo = 2 * ALLEGRO_PI;
+
+                for (int i = 0; i < 8; i += 2) { // atualiza vertices do meteoro
+                    atual_m->meteoro.vertives[i] += METEORO_G_SPEED * atual_m->meteoro.direcao_x + cos(angulo);
+                    atual_m->meteoro.vertives[i + 1] += METEORO_G_SPEED * atual_m->meteoro.direcao_y + sin(angulo);
+                }
+
+				
                 // Mantem meteoro dentro da tela (teletransporte para o lado oposto)
                 if (atual_m->meteoro.x > SCREEN_W) atual_m->meteoro.x = -SPR_METEORO_G_T_W;
                 else if (atual_m->meteoro.x < -SPR_METEORO_G_T_W) atual_m->meteoro.x = SCREEN_W;
@@ -288,6 +337,10 @@ int main() {
                 al_draw_tinted_scaled_rotated_bitmap_region(spr_meteoro_g, 0, 0, SPR_METEORO_G_T_W, SPR_METEORO_G_T_H,
                     al_map_rgb(255, 255, 255), SPR_METEORO_G_T_W / 2, SPR_METEORO_G_T_H / 2,
                     (int)atual_m->meteoro.x, (int)atual_m->meteoro.y, escala, escala, atual_m->meteoro.angulo, 0);
+
+                // debug: desenha quadrado de colisao do meteoro
+                al_draw_rectangle(atual_m->meteoro.vertives[0], atual_m->meteoro.vertives[1], atual_m->meteoro.vertives[4], atual_m->meteoro.vertives[5], al_map_rgb(0, 255, 0), 2);
+
                 ant_m = atual_m;
                 atual_m = atual_m->prox;
             }
@@ -326,6 +379,30 @@ int main() {
             //angulo += rotacao_por_segundo;
             //angulo *= (float)(ALLEGRO_PI / 180.0);
 
+            // --- calcula triângulo da nave ---
+            float nave_tri[6];
+            nave_tri[0] = x + cos(angulo) * 80;  // ponta da frente
+            nave_tri[1] = y + sin(angulo) * 80;
+
+            nave_tri[2] = x + cos(angulo + 2) * 60;  // asa esquerda
+            nave_tri[3] = y + sin(angulo + 2) * 60;
+
+            nave_tri[4] = x + cos(angulo - 2) * 60;  // asa direita
+            nave_tri[5] = y + sin(angulo - 2) * 60;
+
+
+			ALLEGRO_COLOR color = al_map_rgb(255, 255, 255);
+
+			printf("Triangulo da nave: (%f, %f), (%f, %f), (%f, %f)\n", nave_tri[0], nave_tri[1], nave_tri[2], nave_tri[3], nave_tri[4], nave_tri[5]);
+
+            
+            al_draw_filled_triangle(nave_tri[0], nave_tri[1],
+                                    nave_tri[2], nave_tri[3],
+                                    nave_tri[4], nave_tri[5],
+				color); // desenha um triângulo preto menor para "cortar" o triângulo branco e parecer uma borda
+
+
+
             al_flip_display();
         }
     }
@@ -338,6 +415,7 @@ int main() {
     al_destroy_display(display);
     al_destroy_timer(timer);
     al_destroy_event_queue(queue);
+    al_shutdown_primitives_addon();
 
     return 0;
 }
