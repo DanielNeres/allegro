@@ -13,7 +13,8 @@
 #define SPR_NAVE_T_W 41   // largura de um frame da sprite
 #define SPR_NAVE_T_H 32   // altura de um frame
 #define FRAME_COUNT 5 // qtd de frames no spritespr_nave
-#define SPEED 7     // velocidade no eixo x
+#define SPEED 7     // velocidade
+#define TEMPO_ENTRE_COLISIONS 2 // tempo minimo entre tiros em colisões entre a nave e um meteoro em segundos
 #define SPR_BALA_T_W 13   // largura de um frame da sprite da bala
 #define SPR_BALA_T_H 5   // altura de um frame da sprite da bala
 #define BALA_SPEED 14 // velocidade da bala
@@ -253,8 +254,11 @@ int main() {
     double frame_time = 0; // tempo acumulado desde a troca do frame
     double frame_delay = 0.25; // tempo entre frames da anima��o em segundos
     float time_bala = TEMPO_ENTRE_BALAS; // tempo desde o ultimo tiro
+    float time_colisions = TEMPO_ENTRE_COLISIONS; // tempo desde o ultimo tiro
     float angulo = 0;
-	  int escala = 4;
+	int escala = 4;
+    short vida = 3;
+    ALLEGRO_COLOR color = al_map_rgb(255, 255, 255); // cor branca (padrão)
     float rotacao_por_segundo = 4.0 / 60.0;
 	No_Bala* lista_balas = NULL; // Lista encadeada para armazenar as balas
 	No_Meteoro* lista_meteoros = NULL; // Lista encadeada para armazenar os meteoros
@@ -302,6 +306,7 @@ int main() {
             // Atualiza frame da sprite (anima��o da nave)
             frame_time += 1.0 / 60.0;
 			time_bala += 1.0 / 60.0;
+            time_colisions += 1.0 / 60.0;
             if (frame_time >= frame_delay) {
                 frame = (frame + 1) % FRAME_COUNT;
                 frame_time = 0;
@@ -365,27 +370,43 @@ int main() {
                 // Atualiza posi����o do meteoro
                 atual_m->meteoro.x += METEORO_G_SPEED * atual_m->meteoro.direcao_x;
                 atual_m->meteoro.y += METEORO_G_SPEED * atual_m->meteoro.direcao_y;
-                atual_m->meteoro.angulo += atual_m->meteoro.vel_rotacao;
+                //atual_m->meteoro.angulo += atual_m->meteoro.vel_rotacao;
 
                 if(atual_m->meteoro.angulo >= 2 * ALLEGRO_PI) atual_m->meteoro.angulo = 0;
 				else if (atual_m->meteoro.angulo < 0) atual_m->meteoro.angulo = 2 * ALLEGRO_PI;
 
                 float half_w = SPR_METEORO_G_T_W * escala / 2.0;
-                float half_h = SPR_METEORO_G_T_H * escala / 2.0;
+                float half_h = SPR_METEORO_G_T_H * escala / 4.0;
 
-                // 4 vértices relativos ao centro (sem rotação ainda)
-                float vx[4] = { -half_w,  half_w,  half_w, -half_w };
-                float vy[4] = { -half_h, -half_h,  half_h,  half_h };
+                float angle = 3.0 * ALLEGRO_PI / 4.0; // 135 graus
+                float cosA = cos(angle);
+                float sinA = sin(angle);
+
+                float vx[4] = { -half_w, half_w, half_w , -half_w}; 
+                float vy[4] = { -half_h, -half_h, half_h, half_h};
+
+                // aplica rotação
+                float vxr[4], vyr[4];
+                vxr[0] = vx[0] * cosA - vy[0] * sinA;
+                vyr[0] = vx[0] * sinA + vy[0] * cosA;
+
+                vxr[1] = vx[1] * cosA - vy[1] * sinA;
+                vyr[1] = vx[1] * sinA + vy[1] * cosA;
+
+                vxr[2] = vx[2] * cosA - vy[2] * sinA;
+                vyr[2] = vx[2] * sinA + vy[2] * cosA;
+
+                vxr[3] = vx[3] * cosA - vy[3] * sinA;
+                vyr[3] = vx[3] * sinA + vy[3] * cosA;
+
 
                 // aplica rotação do meteoro e desloca para posição real
                 for (int i = 0; i < 4; i++) {
-                    float xr = vx[i] * cos(atual_m->meteoro.angulo) - vy[i] * sin(atual_m->meteoro.angulo);
-                    float yr = vx[i] * sin(atual_m->meteoro.angulo) + vy[i] * cos(atual_m->meteoro.angulo);
+                    float xr = vxr[i] * cos(atual_m->meteoro.angulo) - vyr[i] * sin(atual_m->meteoro.angulo);
+                    float yr = vxr[i] * sin(atual_m->meteoro.angulo) + vyr[i] * cos(atual_m->meteoro.angulo);
                     atual_m->meteoro.vertives[i * 2] = atual_m->meteoro.x + xr;
                     atual_m->meteoro.vertives[i * 2 + 1] = atual_m->meteoro.y + yr;
                 }
-
-
 				
                 // Mantem meteoro dentro da tela (teletransporte para o lado oposto)
                 if (atual_m->meteoro.x > SCREEN_W) atual_m->meteoro.x = -SPR_METEORO_G_T_W;
@@ -397,16 +418,7 @@ int main() {
                     al_map_rgb(255, 255, 255), SPR_METEORO_G_T_W / 2, SPR_METEORO_G_T_H / 2,
                     (int)atual_m->meteoro.x, (int)atual_m->meteoro.y, escala, escala, atual_m->meteoro.angulo, 0);
 
-                // debug: desenha quadrado de colisao do meteoro
-                al_draw_line(atual_m->meteoro.vertives[0], atual_m->meteoro.vertives[1],
-                    atual_m->meteoro.vertives[2], atual_m->meteoro.vertives[3], al_map_rgb(0, 255, 0), 2);
-                al_draw_line(atual_m->meteoro.vertives[2], atual_m->meteoro.vertives[3],
-                    atual_m->meteoro.vertives[4], atual_m->meteoro.vertives[5], al_map_rgb(0, 255, 0), 2);
-                al_draw_line(atual_m->meteoro.vertives[4], atual_m->meteoro.vertives[5],
-                    atual_m->meteoro.vertives[6], atual_m->meteoro.vertives[7], al_map_rgb(0, 255, 0), 2);
-                al_draw_line(atual_m->meteoro.vertives[6], atual_m->meteoro.vertives[7],
-                    atual_m->meteoro.vertives[0], atual_m->meteoro.vertives[1], al_map_rgb(0, 255, 0), 2);
-
+                
                 ant_m = atual_m;
                 atual_m = atual_m->prox;
             }
@@ -428,7 +440,7 @@ int main() {
                 // Desenha nave em movimento
                 al_draw_tinted_scaled_rotated_bitmap_region(spr_nave_movendo, 
 				frame * SPR_NAVE_T_W, 0, SPR_NAVE_T_W, SPR_NAVE_T_H, // regi�o do sprite a ser desenhada 
-                al_map_rgb(255, 255, 255), // cor de tintura (branco = sem altera��o)
+                color, // cor de tintura (branco = sem altera��o)
                  SPR_NAVE_T_W/2, SPR_NAVE_T_H / 2, // ponto de origem para rota��o e escala (canto superior esquerdo da regi�o do sprite)
                  (int)x, (int)y, // posi��o na tela (centralizado na nave)
                  escala, escala, // escala em x e y
@@ -436,7 +448,7 @@ int main() {
             } else {
                 // Desenha nave parada
                 al_draw_tinted_scaled_rotated_bitmap_region(spr_nave_parada, 0, 0, SPR_NAVE_T_H, SPR_NAVE_T_H,
-                al_map_rgb(255, 255, 255), SPR_NAVE_T_H/2 - 7, SPR_NAVE_T_H/2, (int)x, (int)y, escala, escala, angulo, 0); // o -7 �� para centralizar a imagem, que n��o est�� perfeitamente alinhada
+                color, SPR_NAVE_T_H/2 - 7, SPR_NAVE_T_H/2, (int)x, (int)y, escala, escala, angulo, 0); // o -7 �� para centralizar a imagem, que n��o est�� perfeitamente alinhada
             }
 
             // Desenha apenas o frame atual
@@ -459,15 +471,8 @@ int main() {
             nave_tri[5] = y + sin(angulo - 2) * 60;
 
 
-			ALLEGRO_COLOR color = al_map_rgb(255, 255, 255);
-
 			//printf("Triangulo da nave: (%f, %f), (%f, %f), (%f, %f)\n", nave_tri[0], nave_tri[1], nave_tri[2], nave_tri[3], nave_tri[4], nave_tri[5]);
 
-            
-            al_draw_filled_triangle(nave_tri[0], nave_tri[1],
-                                    nave_tri[2], nave_tri[3],
-                                    nave_tri[4], nave_tri[5],
-				color); // desenha um triângulo preto menor para "cortar" o triângulo branco e parecer uma borda
 
             
             // Nave em forma de triângulo
@@ -488,11 +493,22 @@ int main() {
                 };
 
                 // Verifica colisão
-                if (colide_nave_meteoro(nave, meteoro)) {
-                    printf("💥 Colisão detectada!\n");
-                    running = false; // termina o jogo
+                if (colide_nave_meteoro(nave, meteoro) && time_colisions >= TEMPO_ENTRE_COLISIONS) {
+                    vida--;
+                    time_colisions = 0;
+                    if (vida <= 0){
+                        running = false; // fim de jogo
+                    }
                 }
-
+                // nave piscando depois de colidir
+                if (time_colisions < TEMPO_ENTRE_COLISIONS){
+                    if (((int)(time_colisions * 10) % 2) == 0) // pisca a cada 0.1s
+                        color = al_map_rgb(255, 0, 0); // vermelho
+                    else
+                        color = al_map_rgb(255, 255, 255); // branco
+                } else {
+                    color = al_map_rgb(255, 255, 255); // branco
+                }
                 temp_m = temp_m->prox; // avança na lista
             }
 
