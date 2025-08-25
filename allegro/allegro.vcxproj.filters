@@ -54,7 +54,7 @@
     <Image Include="Tutorial1\Tutorial 1\spr_asteroide_medio_3.png">
       <Filter>Arquivos de Recurso</Filter>
     </Image>
-    <Image Include="Tutorial1\Tutorial 1\spr_asteroide_pequeno_1.png">
+    <Image Include="tutorial1\spr_asteroide_pequeno_1.png">
       <Filter>Arquivos de Recurso</Filter>
     </Image>
     <Image Include="tutorial1\spr_asteroide_pequeno_2.png">

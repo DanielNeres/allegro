@@ -153,7 +153,7 @@
     <Image Include="tutorial1\spr_asteroide_medio_1.png" />
     <Image Include="Tutorial1\Tutorial 1\spr_asteroide_medio_2.png" />
     <Image Include="Tutorial1\Tutorial 1\spr_asteroide_medio_3.png" />
-    <Image Include="Tutorial1\Tutorial 1\spr_asteroide_pequeno_1.png" />
+    <Image Include="tutorial1\spr_asteroide_pequeno_1.png" />
     <Image Include="tutorial1\spr_asteroide_pequeno_2.png" />
     <Image Include="Tutorial1\Tutorial 1\spr_asteroide_pequeno_3.png" />
     <Image Include="Tutorial1\Tutorial 1\spr_detritos.png" />

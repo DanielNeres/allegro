@@ -32,6 +32,13 @@
 #define METEORO_M_SPEED 8 // velocidade do meteoro médio
 #define METEORO_M_VIDA 2 // vida do meteoro médio
 #define METEORO_M_VEL_ROTACAO 0.1 // velocidade de rotação do meteoro médio
+#define SPR_METEORO_P_T_W 16   // largura de um frame da sprite do meteoro médio
+#define SPR_METEORO_P_T_H 16   // altura de um frame da sprite do meteoro médio
+#define METEORO_P_SPEED 12 // velocidade do meteoro médio
+#define METEORO_P_VIDA 1 // vida do meteoro médio
+#define METEORO_P_VEL_ROTACAO 0.15 // velocidade de rotação do meteoro médio
+#define SPR_CORACAO_T_W 32  // largura de um frame da sprite do coração
+#define SPR_CORACAO_T_H 32  // altura de um frame da sprite do coração
 
 
 typedef struct{
@@ -229,19 +236,25 @@ void insere_meteoro(No_Meteoro** lista, float x, float y, float angulo, short ti
     novo->meteoro.vida = vida;
     // defini direcao com base em um angulo aleatorio
     float ang = (float)(rand() % 360) * (float)(ALLEGRO_PI / 180.0);
-	printf("Angulo meteoro: %f\n", ang);
+	//printf("Angulo meteoro: %f\n", ang);
     novo->meteoro.direcao_x = cos(ang);
     novo->meteoro.direcao_y = sin(ang);
     // define uma velocidade de rotação aleatoria
     if (tipo == 1){
         novo->meteoro.vel_rotacao = ((float)(rand() % 100) / 100.0) * METEORO_G_VEL_ROTACAO - METEORO_G_VEL_ROTACAO; // entre -METEORO_G_VEL_ROTACAO e METEORO_G_VEL_ROTACAO
-	    printf("Velocidade de rotacao meteoro: %f\n", novo->meteoro.vel_rotacao);
+	    //printf("Velocidade de rotacao meteoro: %f\n", novo->meteoro.vel_rotacao);
     } else if (tipo == 2){
         // escolhe um sprite aleatorio para o meteoro médio
         novo->meteoro.sprite = (rand() % 3) + 1; // 1, 2 ou 3
         novo->meteoro.vel_rotacao = ((float)(rand() % 100) / 100.0) * METEORO_M_VEL_ROTACAO - METEORO_M_VEL_ROTACAO; // entre -METEORO_M_VEL_ROTACAO e METEORO_M_VEL_ROTACAO
-        printf("Velocidade de rotacao meteoro: %f\n", novo->meteoro.vel_rotacao);
-    } 
+        //printf("Velocidade de rotacao meteoro: %f\n", novo->meteoro.vel_rotacao);
+    } else{
+        // escolhe um sprite aleatorio para o meteoro pequeno
+        novo->meteoro.sprite = (rand() % 3) + 1; // 1, 2 ou 3
+        novo->meteoro.vel_rotacao = ((float)(rand() % 100) / 100.0) * METEORO_P_VEL_ROTACAO - METEORO_P_VEL_ROTACAO; // entre -METEORO_P_VEL_ROTACAO e METEORO_P_VEL_ROTACAO
+        //printf("Velocidade de rotacao meteoro: %f\n", novo->meteoro.vel_rotacao);
+    }
+    
 	
     novo->prox = *lista;
     *lista = novo;
@@ -379,6 +392,30 @@ int main() {
     ALLEGRO_BITMAP* spr_meteoro_m_3 = al_load_bitmap("tutorial1/spr_asteroide_medio_3.png");
     if (!spr_meteoro_m_3) {
         printf("Erro ao carregar spritespr_meteoro_m_3!\n");
+        return -1;
+    }
+
+    ALLEGRO_BITMAP* spr_meteoro_p_1 = al_load_bitmap("tutorial1/spr_asteroide_pequeno_1.png");
+    if (!spr_meteoro_p_1) {
+        printf("Erro ao carregar spritespr_meteoro_p_1!\n");
+        return -1;
+    }
+
+    ALLEGRO_BITMAP* spr_meteoro_p_2 = al_load_bitmap("tutorial1/spr_asteroide_pequeno_2.png");
+    if (!spr_meteoro_p_2) {
+        printf("Erro ao carregar spritespr_meteoro_p_2!\n");
+        return -1;
+    }
+
+    ALLEGRO_BITMAP* spr_meteoro_p_3 = al_load_bitmap("tutorial1/spr_asteroide_pequeno_3.png");
+    if (!spr_meteoro_p_3) {
+        printf("Erro ao carregar spritespr_meteoro_p_3!\n");
+        return -1;
+    }
+
+    ALLEGRO_BITMAP* spr_coracao = al_load_bitmap("tutorial1/spr_coracao.png");
+    if (!spr_coracao) {
+        printf("Erro ao carregar spritespr_coracao!\n");
         return -1;
     }
 
@@ -558,10 +595,10 @@ int main() {
                     }
 
                     // debug desenha o colisor do meteoro
-                    al_draw_line(atual_m->meteoro.vertives[0], atual_m->meteoro.vertives[1], atual_m->meteoro.vertives[2], atual_m->meteoro.vertives[3], al_map_rgb(0, 255, 255), 2);
+                    /*al_draw_line(atual_m->meteoro.vertives[0], atual_m->meteoro.vertives[1], atual_m->meteoro.vertives[2], atual_m->meteoro.vertives[3], al_map_rgb(0, 255, 255), 2);
                     al_draw_line(atual_m->meteoro.vertives[2], atual_m->meteoro.vertives[3], atual_m->meteoro.vertives[4], atual_m->meteoro.vertives[5], al_map_rgb(0, 255, 255), 2);
                     al_draw_line(atual_m->meteoro.vertives[4], atual_m->meteoro.vertives[5], atual_m->meteoro.vertives[6], atual_m->meteoro.vertives[7], al_map_rgb(0, 255, 255), 2);
-                    al_draw_line(atual_m->meteoro.vertives[6], atual_m->meteoro.vertives[7], atual_m->meteoro.vertives[0], atual_m->meteoro.vertives[1], al_map_rgb(0, 255, 255), 2);
+                    al_draw_line(atual_m->meteoro.vertives[6], atual_m->meteoro.vertives[7], atual_m->meteoro.vertives[0], atual_m->meteoro.vertives[1], al_map_rgb(0, 255, 255), 2);*/
                     
                     // Mantem meteoro dentro da tela (teletransporte para o lado oposto)
                     if (atual_m->meteoro.x > SCREEN_W) atual_m->meteoro.x = -SPR_METEORO_G_T_W;
@@ -602,10 +639,10 @@ int main() {
                     else if (atual_m->meteoro.y < -SPR_METEORO_M_T_H) atual_m->meteoro.y = SCREEN_H;
 
                     // debug desenha o colisor do meteoro
-                    al_draw_line(atual_m->meteoro.vertives[0], atual_m->meteoro.vertives[1], atual_m->meteoro.vertives[2], atual_m->meteoro.vertives[3], al_map_rgb(0, 255, 255), 2);
+                    /*al_draw_line(atual_m->meteoro.vertives[0], atual_m->meteoro.vertives[1], atual_m->meteoro.vertives[2], atual_m->meteoro.vertives[3], al_map_rgb(0, 255, 255), 2);
                     al_draw_line(atual_m->meteoro.vertives[2], atual_m->meteoro.vertives[3], atual_m->meteoro.vertives[4], atual_m->meteoro.vertives[5], al_map_rgb(0, 255, 255), 2);
                     al_draw_line(atual_m->meteoro.vertives[4], atual_m->meteoro.vertives[5], atual_m->meteoro.vertives[6], atual_m->meteoro.vertives[7], al_map_rgb(0, 255, 255), 2);
-                    al_draw_line(atual_m->meteoro.vertives[6], atual_m->meteoro.vertives[7], atual_m->meteoro.vertives[0], atual_m->meteoro.vertives[1], al_map_rgb(0, 255, 255), 2);
+                    al_draw_line(atual_m->meteoro.vertives[6], atual_m->meteoro.vertives[7], atual_m->meteoro.vertives[0], atual_m->meteoro.vertives[1], al_map_rgb(0, 255, 255), 2);*/
 
                     if (atual_m->meteoro.sprite == 1){
                         al_draw_tinted_scaled_rotated_bitmap_region(spr_meteoro_m_1, 0, 0, SPR_METEORO_M_T_W, SPR_METEORO_M_T_H,
@@ -620,7 +657,55 @@ int main() {
                         al_map_rgb(255, 255, 255), SPR_METEORO_M_T_W / 2, SPR_METEORO_M_T_H / 2,
                         (int)atual_m->meteoro.x, (int)atual_m->meteoro.y, ESCALA, ESCALA, atual_m->meteoro.angulo, 0);
                     }
+                
+                } else{
+                    atual_m->meteoro.x += METEORO_P_SPEED * atual_m->meteoro.direcao_x;
+                    atual_m->meteoro.y += METEORO_P_SPEED * atual_m->meteoro.direcao_y;
+                    atual_m->meteoro.angulo += atual_m->meteoro.vel_rotacao;
+
+                    if(atual_m->meteoro.angulo >= 2 * ALLEGRO_PI) atual_m->meteoro.angulo = 0;
+                    else if (atual_m->meteoro.angulo < 0) atual_m->meteoro.angulo = 2 * ALLEGRO_PI;
+
+                    float half_w = SPR_METEORO_P_T_W * ESCALA * 0.3;
+                    float half_h = SPR_METEORO_P_T_H * ESCALA * 0.3;
+
+                    float vx[4] = { -half_w, half_w, half_w , -half_w}; 
+                    float vy[4] = { -half_h, -half_h, half_h, half_h};
+
+                    for (int i = 0; i < 4; i++) {
+                        float xr = vx[i] * cos(atual_m->meteoro.angulo) - vy[i] * sin(atual_m->meteoro.angulo);
+                        float yr = vx[i] * sin(atual_m->meteoro.angulo) + vy[i] * cos(atual_m->meteoro.angulo);
+                        atual_m->meteoro.vertives[i * 2] = atual_m->meteoro.x + xr;
+                        atual_m->meteoro.vertives[i * 2 + 1] = atual_m->meteoro.y + yr;
+                    }
+
+                    if (atual_m->meteoro.x > SCREEN_W) atual_m->meteoro.x = -SPR_METEORO_P_T_W;
+                    else if (atual_m->meteoro.x < -SPR_METEORO_P_T_W) atual_m->meteoro.x = SCREEN_W;
+
+                    if (atual_m->meteoro.y > SCREEN_H) atual_m->meteoro.y = -SPR_METEORO_P_T_H;
+                    else if (atual_m->meteoro.y < -SPR_METEORO_P_T_H) atual_m->meteoro.y = SCREEN_H;
+
+                    // debug desenha o colisor do meteoro
+                    /*al_draw_line(atual_m->meteoro.vertives[0], atual_m->meteoro.vertives[1], atual_m->meteoro.vertives[2], atual_m->meteoro.vertives[3], al_map_rgb(0, 255, 255), 2);
+                    al_draw_line(atual_m->meteoro.vertives[2], atual_m->meteoro.vertives[3], atual_m->meteoro.vertives[4], atual_m->meteoro.vertives[5], al_map_rgb(0, 255, 255), 2);
+                    al_draw_line(atual_m->meteoro.vertives[4], atual_m->meteoro.vertives[5], atual_m->meteoro.vertives[6], atual_m->meteoro.vertives[7], al_map_rgb(0, 255, 255), 2);
+                    al_draw_line(atual_m->meteoro.vertives[6], atual_m->meteoro.vertives[7], atual_m->meteoro.vertives[0], atual_m->meteoro.vertives[1], al_map_rgb(0, 255, 255), 2);*/
+
+                    if (atual_m->meteoro.sprite == 1){
+                        al_draw_tinted_scaled_rotated_bitmap_region(spr_meteoro_p_1, 0, 0, SPR_METEORO_P_T_W, SPR_METEORO_P_T_H,
+                        al_map_rgb(255, 255, 255), SPR_METEORO_P_T_W / 2, SPR_METEORO_P_T_H / 2,
+                        (int)atual_m->meteoro.x, (int)atual_m->meteoro.y, ESCALA, ESCALA, atual_m->meteoro.angulo, 0);
+                    } else if (atual_m->meteoro.sprite == 2){
+                        al_draw_tinted_scaled_rotated_bitmap_region(spr_meteoro_p_2, 0, 0, SPR_METEORO_P_T_W, SPR_METEORO_P_T_H,
+                        al_map_rgb(255, 255, 255), SPR_METEORO_P_T_W / 2, SPR_METEORO_P_T_H / 2,
+                        (int)atual_m->meteoro.x, (int)atual_m->meteoro.y, ESCALA, ESCALA, atual_m->meteoro.angulo, 0);
+                    } else{
+                        al_draw_tinted_scaled_rotated_bitmap_region(spr_meteoro_p_3, 0, 0, SPR_METEORO_P_T_W, SPR_METEORO_P_T_H,
+                        al_map_rgb(255, 255, 255), SPR_METEORO_P_T_W / 2, SPR_METEORO_P_T_H / 2,
+                        (int)atual_m->meteoro.x, (int)atual_m->meteoro.y, ESCALA, ESCALA, atual_m->meteoro.angulo, 0);
+                    }
                 }
+                
                 
                 ant_m = atual_m;
                 atual_m = atual_m->prox;
@@ -727,12 +812,21 @@ int main() {
                                 insere_meteoro(&lista_meteoros, m->meteoro.x, m->meteoro.y, 0, 2, METEORO_M_VIDA);
                                 insere_meteoro(&lista_meteoros, m->meteoro.x, m->meteoro.y, 0, 2, METEORO_M_VIDA);
                                 insere_meteoro(&lista_meteoros, m->meteoro.x, m->meteoro.y, 0, 2, METEORO_M_VIDA);
+                                pontos += 10;
+                            } else if (m->meteoro.tipo == 2) {
+                                // se for meteoro médio, cria 3 pequenos
+                                insere_meteoro(&lista_meteoros, m->meteoro.x, m->meteoro.y, 0, 3, METEORO_P_VIDA);
+                                insere_meteoro(&lista_meteoros, m->meteoro.x, m->meteoro.y, 0, 3, METEORO_P_VIDA);
+                                insere_meteoro(&lista_meteoros, m->meteoro.x, m->meteoro.y, 0, 3, METEORO_P_VIDA);
+                                pontos += 5;
+                            } else{
+                               pontos += 2;
                             }
 
                             // remove meteoro atual
                             *pm = m->prox;   // desvincula o nó
                             free(m);
-                            pontos += 10;
+                            
                             meteor_removed = true;
                             
                             break;           // para de checar balas: meteoro já não existe
@@ -770,6 +864,13 @@ int main() {
             // desenha o texto
             al_draw_textf(fonte, al_map_rgb(255, 255, 255), 50, 50, 0, "Pontos: %d", pontos);
 
+            // desenha corações de vida 3 e a escala
+            for (int i = 0; i < vida; i++) {
+                al_draw_scaled_bitmap(spr_coracao, 0, 0, SPR_CORACAO_T_W, SPR_CORACAO_T_H,
+                    SCREEN_W - (i + 1) * (SPR_CORACAO_T_W * 3 + 10), 20,
+                    SPR_CORACAO_T_W * 3, SPR_CORACAO_T_H * 3, 0);
+            }
+
 
             al_flip_display();
         }
@@ -780,6 +881,12 @@ int main() {
     al_destroy_bitmap(spr_nave_parada);
 	al_destroy_bitmap(spr_nave_projetil);
 	al_destroy_bitmap(spr_meteoro_g);
+    al_destroy_bitmap(spr_meteoro_m_1);
+    al_destroy_bitmap(spr_meteoro_m_2);
+    al_destroy_bitmap(spr_meteoro_m_3);
+    al_destroy_bitmap(spr_meteoro_p_1);
+    al_destroy_bitmap(spr_meteoro_p_2);
+    al_destroy_bitmap(spr_meteoro_p_3);
     al_destroy_sample(som_tiro);
     al_destroy_font(fonte);
     al_destroy_display(display);
