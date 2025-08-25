@@ -64,10 +64,15 @@ typedef struct {
     float x, y;
 } Ponto;
 
-
+// produto vetorial 2D
 float cross(Ponto a, Ponto b, Ponto c) {
     return (b.x - a.x) * (c.y - a.y) -
-		(b.y - a.y) * (c.x - a.x); // produto vetorial 2D
+		(b.y - a.y) * (c.x - a.x); 
+}
+
+// produto escalar
+static inline float dot(float ax, float ay, float bx, float by) {
+    return ax * bx + ay * by;
 }
 
 bool pontoDentroTriangulo(Ponto p, Ponto a, Ponto b, Ponto c) {
@@ -123,6 +128,60 @@ bool colide_nave_meteoro(Ponto nave[3], Ponto meteoro[4]) {
     }
 
     return false; // nada colidiu
+}
+
+// projeta os vértices num eixo e retorna min/max
+void projecao_poligno(float *vertices, float axis_x, float axis_y, float *min, float *max) {
+    *min = *max = dot(vertices[0], vertices[1], axis_x, axis_y);
+
+    for (int i = 1; i < 4; i++) {
+        float proj = dot(vertices[i*2], vertices[i*2+1], axis_x, axis_y);
+        if (proj < *min) *min = proj;
+        if (proj > *max) *max = proj;
+    }
+}
+
+// verifica colisão entre 2 retângulos rotacionados
+bool colide_retangulos(float *vertsA, float *vertsB) {
+    float axes[4][2];
+    int edges[4][2] = { {0,2}, {2,4}, {4,6}, {6,0} };
+
+    // pega 2 arestas do retângulo A e 2 do B (são os possíveis eixos de separação)
+    for (int shape = 0; shape < 2; shape++) {
+        float *v = (shape == 0 ? vertsA : vertsB);
+        for (int i = 0; i < 2; i++) {
+            int i0 = edges[i][0];
+            int i1 = edges[i][1];
+
+            float edge_x = v[i1] - v[i0];
+            float edge_y = v[i1+1] - v[i0+1];
+
+            // eixo perpendicular (normal)
+            axes[shape*2+i][0] = -edge_y;
+            axes[shape*2+i][1] =  edge_x;
+        }
+    }
+
+    // testa projeções em cada eixo
+    for (int i = 0; i < 4; i++) {
+        float axis_x = axes[i][0];
+        float axis_y = axes[i][1];
+
+        // normaliza eixo
+        float len = sqrtf(axis_x*axis_x + axis_y*axis_y);
+        axis_x /= len;
+        axis_y /= len;
+
+        float minA, maxA, minB, maxB;
+        projecao_poligno(vertsA, axis_x, axis_y, &minA, &maxA);
+        projecao_poligno(vertsB, axis_x, axis_y, &minB, &maxB);
+
+        if (maxA < minB || maxB < minA) {
+            // há separação → sem colisão
+            return false;
+        }
+    }
+    return true; // todas projeções se sobrepõem → colisão
 }
 
 
@@ -539,26 +598,67 @@ int main() {
                 { nave_tri[4], nave_tri[5] }
             };
 
-            // Meteoro em forma de quadrado (com 4 vértices já calculados)
-            No_Meteoro* temp_m = lista_meteoros;
-            while (temp_m != NULL) {
-                Ponto meteoro[4] = {
-                    { temp_m->meteoro.vertives[0], temp_m->meteoro.vertives[1] },
-                    { temp_m->meteoro.vertives[2], temp_m->meteoro.vertives[3] },
-                    { temp_m->meteoro.vertives[4], temp_m->meteoro.vertives[5] },
-                    { temp_m->meteoro.vertives[6], temp_m->meteoro.vertives[7] }
+            // --- Colisão nave x meteoro e bala x meteoro, com remoção segura usando ponteiro-para-ponteiro ---
+            for (No_Meteoro** pm = &lista_meteoros; *pm; ) {
+                No_Meteoro* m = *pm;
+
+                // 1) Colisão NAVE x METEORO (use os vértices já atualizados de m->meteoro.vertives)
+                Ponto mpts[4] = {
+                    { m->meteoro.vertives[0], m->meteoro.vertives[1] },
+                    { m->meteoro.vertives[2], m->meteoro.vertives[3] },
+                    { m->meteoro.vertives[4], m->meteoro.vertives[5] },
+                    { m->meteoro.vertives[6], m->meteoro.vertives[7] }
                 };
 
-                // Verifica colisão
-                if (colide_nave_meteoro(nave, meteoro) && time_colisions >= TEMPO_ENTRE_COLISIONS) {
+                if (colide_nave_meteoro(nave, mpts) && time_colisions >= TEMPO_ENTRE_COLISIONS) {
                     vida--;
                     time_colisions = 0;
-                    if (vida <= 0){
+                    if (vida <= 0) {
                         running = false; // fim de jogo
                     }
                 }
-                temp_m = temp_m->prox; // avança na lista
+
+                // 2) Colisão BALAS x METEORO (pode remover bala e até remover o meteoro)
+                bool meteor_removed = false;
+                for (No_Bala** pb = &lista_balas; *pb; ) {
+                    No_Bala* b = *pb;
+
+                    if (colide_retangulos(b->bala.vertices, m->meteoro.vertives)) {
+                        // acerta: toca som, remove bala, aplica dano
+                        al_play_sample(som_hit, 1.0, 0.0, 1.0, ALLEGRO_PLAYMODE_ONCE, NULL);
+
+                        // remove bala atual
+                        *pb = b->prox;
+                        free(b);
+
+                        // aplica dano e verifica remoção do meteoro
+                        if (--m->meteoro.vida <= 0) {
+                            // remove meteoro atual
+                            *pm = m->prox;   // desvincula o nó
+                            free(m);
+                            pontos += 10;
+                            meteor_removed = true;
+                            break;           // para de checar balas: meteoro já não existe
+                        }
+                        // se o meteoro ainda vive, 'pb' já aponta para o próximo (por causa de *pb = b->prox)
+                        // então apenas continua sem avançar manualmente
+                    }
+                    else {
+                        // sem colisão: avança o iterador de balas
+                        pb = &(*pb)->prox;
+                    }
+                }
+
+                if (meteor_removed) {
+                    // *pm já aponta para o próximo meteoro; não use 'm' aqui (foi liberado)
+                    continue; // recomeça o loop com o novo *pm
+                }
+                else {
+                    // meteoro não foi removido: avance normalmente
+                    pm = &m->prox;
+                }
             }
+
 
             // nave piscando depois de colidir
             if (time_colisions < TEMPO_ENTRE_COLISIONS){
@@ -569,8 +669,6 @@ int main() {
             } else {
                 color = al_map_rgb(255, 255, 255); // branco
             }
-
-    
 
             // desenha o texto
             al_draw_textf(fonte, al_map_rgb(255, 255, 255), 50, 50, 0, "Pontos: %d", pontos);
