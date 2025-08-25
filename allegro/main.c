@@ -55,23 +55,71 @@ typedef struct {
     float lado;
 } Colision_Quadrado;
 
+typedef struct {
+    float x, y;
+} Ponto;
 
-float area(float x1, float y1, float x2, float y2, float x3, float y3) {
-    return fabs((x1*(y2-y3) + x2*(y3-y1) + x3*(y1-y2)) / 2.0);
+
+float cross(Ponto a, Ponto b, Ponto c) {
+    return (b.x - a.x) * (c.y - a.y) -
+		(b.y - a.y) * (c.x - a.x); // produto vetorial 2D
 }
 
-bool pontoDentroTriangulo(float px, float py, float *tri) {
-    float A  = area(tri[0], tri[1], tri[2], tri[3], tri[4], tri[5]);
-    float A1 = area(px, py, tri[2], tri[3], tri[4], tri[5]);
-    float A2 = area(tri[0], tri[1], px, py, tri[4], tri[5]);
-    float A3 = area(tri[0], tri[1], tri[2], tri[3], px, py);
-    return fabs(A - (A1 + A2 + A3)) < 0.01;
+bool pontoDentroTriangulo(Ponto p, Ponto a, Ponto b, Ponto c) {
+    float c1 = cross(a, b, p);
+    float c2 = cross(b, c, p);
+    float c3 = cross(c, a, p);
+
+    bool tem_neg = (c1 < 0) || (c2 < 0) || (c3 < 0);
+    bool tem_pos = (c1 > 0) || (c2 > 0) || (c3 > 0);
+
+    return !(tem_neg && tem_pos);
 }
 
-bool pontoDentroQuadrado(float px, float py, float *quad) {
-    return (px >= quad[0] && px <= quad[4] &&
-            py >= quad[1] && py <= quad[5]);
+
+bool pontoDentroQuadrado(Ponto p, Ponto q[4]) {
+    // Divide o quadrado em 2 triângulos e testa
+    return pontoDentroTriangulo(p, q[0], q[1], q[2]) ||
+        pontoDentroTriangulo(p, q[0], q[2], q[3]);
 }
+
+
+bool segmentosCruzam(Ponto p1, Ponto p2, Ponto q1, Ponto q2) {
+    float d1 = cross(p1, p2, q1);
+    float d2 = cross(p1, p2, q2);
+    float d3 = cross(q1, q2, p1);
+    float d4 = cross(q1, q2, p2);
+
+    return ((d1 * d2) <= 0) && ((d3 * d4) <= 0);
+}
+
+
+bool colide_nave_meteoro(Ponto nave[3], Ponto meteoro[4]) {
+    // Caso 1: algum vértice do triângulo está dentro do quadrado
+    for (int i = 0; i < 3; i++)
+        if (pontoDentroQuadrado(nave[i], meteoro))
+            return true;
+
+    // Caso 2: algum vértice do quadrado está dentro do triângulo
+    for (int i = 0; i < 4; i++)
+        if (pontoDentroTriangulo(meteoro[i], nave[0], nave[1], nave[2]))
+            return true;
+
+    // Caso 3: interseção de arestas
+    for (int i = 0; i < 3; i++) {
+        Ponto n1 = nave[i];
+        Ponto n2 = nave[(i + 1) % 3];
+        for (int j = 0; j < 4; j++) {
+            Ponto m1 = meteoro[j];
+            Ponto m2 = meteoro[(j + 1) % 4];
+            if (segmentosCruzam(n1, n2, m1, m2))
+                return true;
+        }
+    }
+
+    return false; // nada colidiu
+}
+
 
 void insere_bala(No_Bala** lista, float x, float y, float angulo){
     No_Bala* novo = (No_Bala*)malloc(sizeof(No_Bala));
@@ -322,10 +370,21 @@ int main() {
                 if(atual_m->meteoro.angulo >= 2 * ALLEGRO_PI) atual_m->meteoro.angulo = 0;
 				else if (atual_m->meteoro.angulo < 0) atual_m->meteoro.angulo = 2 * ALLEGRO_PI;
 
-                for (int i = 0; i < 8; i += 2) { // atualiza vertices do meteoro
-                    atual_m->meteoro.vertives[i] += METEORO_G_SPEED * atual_m->meteoro.direcao_x + cos(angulo);
-                    atual_m->meteoro.vertives[i + 1] += METEORO_G_SPEED * atual_m->meteoro.direcao_y + sin(angulo);
+                float half_w = SPR_METEORO_G_T_W * escala / 2.0;
+                float half_h = SPR_METEORO_G_T_H * escala / 2.0;
+
+                // 4 vértices relativos ao centro (sem rotação ainda)
+                float vx[4] = { -half_w,  half_w,  half_w, -half_w };
+                float vy[4] = { -half_h, -half_h,  half_h,  half_h };
+
+                // aplica rotação do meteoro e desloca para posição real
+                for (int i = 0; i < 4; i++) {
+                    float xr = vx[i] * cos(atual_m->meteoro.angulo) - vy[i] * sin(atual_m->meteoro.angulo);
+                    float yr = vx[i] * sin(atual_m->meteoro.angulo) + vy[i] * cos(atual_m->meteoro.angulo);
+                    atual_m->meteoro.vertives[i * 2] = atual_m->meteoro.x + xr;
+                    atual_m->meteoro.vertives[i * 2 + 1] = atual_m->meteoro.y + yr;
                 }
+
 
 				
                 // Mantem meteoro dentro da tela (teletransporte para o lado oposto)
@@ -339,11 +398,20 @@ int main() {
                     (int)atual_m->meteoro.x, (int)atual_m->meteoro.y, escala, escala, atual_m->meteoro.angulo, 0);
 
                 // debug: desenha quadrado de colisao do meteoro
-                al_draw_rectangle(atual_m->meteoro.vertives[0], atual_m->meteoro.vertives[1], atual_m->meteoro.vertives[4], atual_m->meteoro.vertives[5], al_map_rgb(0, 255, 0), 2);
+                al_draw_line(atual_m->meteoro.vertives[0], atual_m->meteoro.vertives[1],
+                    atual_m->meteoro.vertives[2], atual_m->meteoro.vertives[3], al_map_rgb(0, 255, 0), 2);
+                al_draw_line(atual_m->meteoro.vertives[2], atual_m->meteoro.vertives[3],
+                    atual_m->meteoro.vertives[4], atual_m->meteoro.vertives[5], al_map_rgb(0, 255, 0), 2);
+                al_draw_line(atual_m->meteoro.vertives[4], atual_m->meteoro.vertives[5],
+                    atual_m->meteoro.vertives[6], atual_m->meteoro.vertives[7], al_map_rgb(0, 255, 0), 2);
+                al_draw_line(atual_m->meteoro.vertives[6], atual_m->meteoro.vertives[7],
+                    atual_m->meteoro.vertives[0], atual_m->meteoro.vertives[1], al_map_rgb(0, 255, 0), 2);
 
                 ant_m = atual_m;
                 atual_m = atual_m->prox;
             }
+
+            
 
             if (keys[UP]) {
                 // Atualiza posi��o (indo para frente na dire����o do angulo)
@@ -393,13 +461,42 @@ int main() {
 
 			ALLEGRO_COLOR color = al_map_rgb(255, 255, 255);
 
-			printf("Triangulo da nave: (%f, %f), (%f, %f), (%f, %f)\n", nave_tri[0], nave_tri[1], nave_tri[2], nave_tri[3], nave_tri[4], nave_tri[5]);
+			//printf("Triangulo da nave: (%f, %f), (%f, %f), (%f, %f)\n", nave_tri[0], nave_tri[1], nave_tri[2], nave_tri[3], nave_tri[4], nave_tri[5]);
 
             
             al_draw_filled_triangle(nave_tri[0], nave_tri[1],
                                     nave_tri[2], nave_tri[3],
                                     nave_tri[4], nave_tri[5],
 				color); // desenha um triângulo preto menor para "cortar" o triângulo branco e parecer uma borda
+
+            
+            // Nave em forma de triângulo
+            Ponto nave[3] = {
+                { nave_tri[0], nave_tri[1] },
+                { nave_tri[2], nave_tri[3] },
+                { nave_tri[4], nave_tri[5] }
+            };
+
+            // Meteoro em forma de quadrado (com 4 vértices já calculados)
+            No_Meteoro* temp_m = lista_meteoros;
+            while (temp_m != NULL) {
+                Ponto meteoro[4] = {
+                    { temp_m->meteoro.vertives[0], temp_m->meteoro.vertives[1] },
+                    { temp_m->meteoro.vertives[2], temp_m->meteoro.vertives[3] },
+                    { temp_m->meteoro.vertives[4], temp_m->meteoro.vertives[5] },
+                    { temp_m->meteoro.vertives[6], temp_m->meteoro.vertives[7] }
+                };
+
+                // Verifica colisão
+                if (colide_nave_meteoro(nave, meteoro)) {
+                    printf("💥 Colisão detectada!\n");
+                    running = false; // termina o jogo
+                }
+
+                temp_m = temp_m->prox; // avança na lista
+            }
+
+            
 
 
 
