@@ -3,6 +3,8 @@
 #include <allegro5/allegro_primitives.h>
 #include <allegro5/allegro_audio.h>
 #include <allegro5/allegro_acodec.h>
+#include <allegro5/allegro_font.h>
+#include <allegro5/allegro_ttf.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -10,6 +12,7 @@
 
 #define SCREEN_W 2500 // tamanho da janela em largura
 #define SCREEN_H 1500 // tamanho da janela em altura
+#define ESCALA 4 // ESCALA dos sprites
 #define SPR_NAVE_T_W 41   // largura de um frame da sprite
 #define SPR_NAVE_T_H 32   // altura de um frame
 #define FRAME_COUNT 5 // qtd de frames no spritespr_nave
@@ -29,6 +32,7 @@
 typedef struct{
     float x, y;
     float angulo;
+    float vertices[8]; //retangulo
 }Bala;
 
 typedef struct{
@@ -36,7 +40,7 @@ typedef struct{
     float angulo;
     float direcao_x, direcao_y;
     float vel_rotacao;
-	float vertives[8]; // numero de vertices do meteoro (para colisao mais precisa)
+	float vertives[8]; // numero de vertices do colisor do meteoro (retangulo)
     short vida;
     short tipo; // 1-grande, 2-medio, 3-pequeno
 }Meteoro;
@@ -70,7 +74,7 @@ bool pontoDentroTriangulo(Ponto p, Ponto a, Ponto b, Ponto c) {
     float c1 = cross(a, b, p);
     float c2 = cross(b, c, p);
     float c3 = cross(c, a, p);
-
+    
     bool tem_neg = (c1 < 0) || (c2 < 0) || (c3 < 0);
     bool tem_pos = (c1 > 0) || (c2 > 0) || (c3 > 0);
 
@@ -127,6 +131,26 @@ void insere_bala(No_Bala** lista, float x, float y, float angulo){
     novo->bala.x = x;
     novo->bala.y = y;
     novo->bala.angulo = angulo;
+    
+    float half_w = SPR_BALA_T_W * ESCALA / 2.0;
+    float half_h = SPR_BALA_T_H * ESCALA / 2.0;
+
+    float cosA = cos(angulo);
+    float sinA = sin(angulo);
+
+    float vx[4] = { -half_w, half_w, half_w , -half_w}; 
+    float vy[4] = { -half_h, -half_h, half_h, half_h};
+
+    // aplica rotação
+    for (int i = 0; i < 4; i++) {
+        float rx = vx[i] * cosA - vy[i] * sinA;
+        float ry = vx[i] * sinA + vy[i] * cosA;
+
+        novo->bala.vertices[i * 2]     = rx + x;
+        novo->bala.vertices[i * 2 + 1] = ry + y;
+    }
+
+
     novo->prox = *lista;
     *lista = novo;
 }
@@ -135,10 +159,6 @@ void insere_meteoro(No_Meteoro** lista, float x, float y, float angulo, short ti
     No_Meteoro* novo = (No_Meteoro*)malloc(sizeof(No_Meteoro));
     novo->meteoro.x = x;
     novo->meteoro.y = y;
-	novo->meteoro.vertives[0] = x - SPR_METEORO_G_T_W / 2; novo->meteoro.vertives[1] = y - SPR_METEORO_G_T_H / 2; // sup esq
-	novo->meteoro.vertives[2] = x + SPR_METEORO_G_T_W / 2; novo->meteoro.vertives[3] = y - SPR_METEORO_G_T_H / 2; // sup dir
-	novo->meteoro.vertives[4] = x + SPR_METEORO_G_T_W / 2; novo->meteoro.vertives[5] = y + SPR_METEORO_G_T_H / 2; // inf dir
-	novo->meteoro.vertives[6] = x - SPR_METEORO_G_T_W / 2; novo->meteoro.vertives[7] = y + SPR_METEORO_G_T_H / 2; // inf esq
     novo->meteoro.angulo = angulo;
     novo->meteoro.tipo = tipo;
     novo->meteoro.vida = vida;
@@ -197,6 +217,16 @@ int main() {
         return -1;
     }
 
+    if (!al_init_font_addon()) {
+        printf("Erro ao inicializar font!\n");
+        return -1;
+    }
+
+    if(!al_init_ttf_addon()) {
+        printf("Erro ao inicializar ttf font!\n");
+        return -1;
+    }
+
 
 	// Inicializa a tela (padrão)
     ALLEGRO_DISPLAY* display = al_create_display(SCREEN_W, SCREEN_H);
@@ -214,12 +244,26 @@ int main() {
     al_register_event_source(queue, al_get_timer_event_source(timer));
     al_register_event_source(queue, al_get_keyboard_event_source());
 
+
+    // carrega a fonte
+    ALLEGRO_FONT *fonte = al_load_ttf_font("Pixellettersfull-BnJ5.ttf", 64, 0);
+    if (!fonte) {
+        fprintf(stderr, "Erro ao carregar fonte!\n");
+        return -1;
+    }
+
 	// carrega som
     ALLEGRO_SAMPLE* som_tiro = al_load_sample("tutorial1/snd_projetil.wav");
     if (!som_tiro) {
         printf("Erro ao carregar som!\n");
         return -1;
 	}
+
+    ALLEGRO_SAMPLE* som_hit = al_load_sample("tutorial1/snd_hit.wav");
+    if (!som_hit) {
+        printf("Erro ao carregar som!\n");
+        return -1;
+    }
 
 	// Carrega a sprites
     ALLEGRO_BITMAP* spr_nave_movendo = al_load_bitmap("tutorial1/spr_nave_movendo.png");
@@ -256,8 +300,8 @@ int main() {
     float time_bala = TEMPO_ENTRE_BALAS; // tempo desde o ultimo tiro
     float time_colisions = TEMPO_ENTRE_COLISIONS; // tempo desde o ultimo tiro
     float angulo = 0;
-	int escala = 4;
     short vida = 3;
+    int pontos = 0;
     ALLEGRO_COLOR color = al_map_rgb(255, 255, 255); // cor branca (padrão)
     float rotacao_por_segundo = 4.0 / 60.0;
 	No_Bala* lista_balas = NULL; // Lista encadeada para armazenar as balas
@@ -341,10 +385,23 @@ int main() {
                 // Atualiza posi����o da bala
                 atual->bala.x += BALA_SPEED * cos(atual->bala.angulo);
                 atual->bala.y += BALA_SPEED * sin(atual->bala.angulo);
+
+                // atualiza os vertices de colisäo da bala
+                for (int i = 0; i < 4; i++) {
+                    atual->bala.vertices[i * 2] += BALA_SPEED * cos(atual->bala.angulo);;
+                    atual->bala.vertices[i * 2 + 1] += BALA_SPEED * sin(atual->bala.angulo);
+                }
+
                 // Desenha a bala
                 al_draw_tinted_scaled_rotated_bitmap_region(spr_nave_projetil, 0, 0, SPR_BALA_T_W, SPR_BALA_T_H,
                     al_map_rgb(255, 255, 255), SPR_BALA_T_W / 2, SPR_BALA_T_H / 2,
-                    (int)atual->bala.x, (int)atual->bala.y, escala, escala, atual->bala.angulo, 0);
+                    (int)atual->bala.x, (int)atual->bala.y, ESCALA, ESCALA, atual->bala.angulo, 0);
+
+                // debug desenha o colisor da bala
+                al_draw_line(atual->bala.vertices[0], atual->bala.vertices[1], atual->bala.vertices[2], atual->bala.vertices[3], al_map_rgb(255, 0, 255), 2);
+                al_draw_line(atual->bala.vertices[2], atual->bala.vertices[3], atual->bala.vertices[4], atual->bala.vertices[5], al_map_rgb(255, 0, 255), 2);
+                al_draw_line(atual->bala.vertices[4], atual->bala.vertices[5], atual->bala.vertices[6], atual->bala.vertices[7], al_map_rgb(255, 0, 255), 2);
+                al_draw_line(atual->bala.vertices[6], atual->bala.vertices[7], atual->bala.vertices[0], atual->bala.vertices[1], al_map_rgb(255, 0, 255), 2);
                 // Remove a bala se sair da tela
                 if (atual->bala.x < -SPR_BALA_T_W || atual->bala.x > SCREEN_W || atual->bala.y < -SPR_BALA_T_H || atual->bala.y > SCREEN_H) {
                     No_Bala* temp = atual;
@@ -375,8 +432,8 @@ int main() {
                 if(atual_m->meteoro.angulo >= 2 * ALLEGRO_PI) atual_m->meteoro.angulo = 0;
 				else if (atual_m->meteoro.angulo < 0) atual_m->meteoro.angulo = 2 * ALLEGRO_PI;
 
-                float half_w = SPR_METEORO_G_T_W * escala / 2.0;
-                float half_h = SPR_METEORO_G_T_H * escala / 4.0;
+                float half_w = SPR_METEORO_G_T_W * ESCALA / 2.0;
+                float half_h = SPR_METEORO_G_T_H * ESCALA / 4.0;
 
                 float angle = 3.0 * ALLEGRO_PI / 4.0; // 135 graus
                 float cosA = cos(angle);
@@ -416,7 +473,7 @@ int main() {
                 // Desenha o meteoro
                 al_draw_tinted_scaled_rotated_bitmap_region(spr_meteoro_g, 0, 0, SPR_METEORO_G_T_W, SPR_METEORO_G_T_H,
                     al_map_rgb(255, 255, 255), SPR_METEORO_G_T_W / 2, SPR_METEORO_G_T_H / 2,
-                    (int)atual_m->meteoro.x, (int)atual_m->meteoro.y, escala, escala, atual_m->meteoro.angulo, 0);
+                    (int)atual_m->meteoro.x, (int)atual_m->meteoro.y, ESCALA, ESCALA, atual_m->meteoro.angulo, 0);
 
                 
                 ant_m = atual_m;
@@ -441,14 +498,14 @@ int main() {
                 al_draw_tinted_scaled_rotated_bitmap_region(spr_nave_movendo, 
 				frame * SPR_NAVE_T_W, 0, SPR_NAVE_T_W, SPR_NAVE_T_H, // regi�o do sprite a ser desenhada 
                 color, // cor de tintura (branco = sem altera��o)
-                 SPR_NAVE_T_W/2, SPR_NAVE_T_H / 2, // ponto de origem para rota��o e escala (canto superior esquerdo da regi�o do sprite)
+                 SPR_NAVE_T_W/2, SPR_NAVE_T_H / 2, // ponto de origem para rota��o e ESCALA (canto superior esquerdo da regi�o do sprite)
                  (int)x, (int)y, // posi��o na tela (centralizado na nave)
-                 escala, escala, // escala em x e y
+                 ESCALA, ESCALA, // ESCALA em x e y
                  angulo, 0); // �ngulo de rota��o em radianos
             } else {
                 // Desenha nave parada
                 al_draw_tinted_scaled_rotated_bitmap_region(spr_nave_parada, 0, 0, SPR_NAVE_T_H, SPR_NAVE_T_H,
-                color, SPR_NAVE_T_H/2 - 7, SPR_NAVE_T_H/2, (int)x, (int)y, escala, escala, angulo, 0); // o -7 �� para centralizar a imagem, que n��o est�� perfeitamente alinhada
+                color, SPR_NAVE_T_H/2 - 7, SPR_NAVE_T_H/2, (int)x, (int)y, ESCALA, ESCALA, angulo, 0); // o -7 �� para centralizar a imagem, que n��o est�� perfeitamente alinhada
             }
 
             // Desenha apenas o frame atual
@@ -500,20 +557,23 @@ int main() {
                         running = false; // fim de jogo
                     }
                 }
-                // nave piscando depois de colidir
-                if (time_colisions < TEMPO_ENTRE_COLISIONS){
-                    if (((int)(time_colisions * 10) % 2) == 0) // pisca a cada 0.1s
-                        color = al_map_rgb(255, 0, 0); // vermelho
-                    else
-                        color = al_map_rgb(255, 255, 255); // branco
-                } else {
-                    color = al_map_rgb(255, 255, 255); // branco
-                }
                 temp_m = temp_m->prox; // avança na lista
             }
 
-            
+            // nave piscando depois de colidir
+            if (time_colisions < TEMPO_ENTRE_COLISIONS){
+                if (((int)(time_colisions * 10) % 2) == 0) // pisca a cada 0.1s
+                    color = al_map_rgb(255, 0, 0); // vermelho
+                else
+                    color = al_map_rgb(255, 255, 255); // branco
+            } else {
+                color = al_map_rgb(255, 255, 255); // branco
+            }
 
+    
+
+            // desenha o texto
+            al_draw_textf(fonte, al_map_rgb(255, 255, 255), 50, 50, 0, "Pontos: %d", pontos);
 
 
             al_flip_display();
@@ -525,6 +585,8 @@ int main() {
     al_destroy_bitmap(spr_nave_parada);
 	al_destroy_bitmap(spr_nave_projetil);
 	al_destroy_bitmap(spr_meteoro_g);
+    al_destroy_sample(som_tiro);
+    al_destroy_font(fonte);
     al_destroy_display(display);
     al_destroy_timer(timer);
     al_destroy_event_queue(queue);
