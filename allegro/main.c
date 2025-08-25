@@ -27,6 +27,11 @@
 #define METEORO_G_SPEED 5 // velocidade do meteoro grande
 #define METEORO_G_VIDA 3 // vida do meteoro grande
 #define METEORO_G_VEL_ROTACAO 0.06 // velocidade de rotação do meteoro grande
+#define SPR_METEORO_M_T_W 32   // largura de um frame da sprite do meteoro médio
+#define SPR_METEORO_M_T_H 32   // altura de um frame da sprite do meteoro médio
+#define METEORO_M_SPEED 8 // velocidade do meteoro médio
+#define METEORO_M_VIDA 2 // vida do meteoro médio
+#define METEORO_M_VEL_ROTACAO 0.1 // velocidade de rotação do meteoro médio
 
 
 typedef struct{
@@ -227,8 +232,14 @@ void insere_meteoro(No_Meteoro** lista, float x, float y, float angulo, short ti
     novo->meteoro.direcao_x = cos(ang);
     novo->meteoro.direcao_y = sin(ang);
     // define uma velocidade de rotação aleatoria
-	novo->meteoro.vel_rotacao = ((float)(rand() % 100) / 100.0) * METEORO_G_VEL_ROTACAO - METEORO_G_VEL_ROTACAO; // entre -METEORO_G_VEL_ROTACAO e METEORO_G_VEL_ROTACAO
-	printf("Velocidade de rotacao meteoro: %f\n", novo->meteoro.vel_rotacao);
+    if (tipo == 1){
+        novo->meteoro.vel_rotacao = ((float)(rand() % 100) / 100.0) * METEORO_G_VEL_ROTACAO - METEORO_G_VEL_ROTACAO; // entre -METEORO_G_VEL_ROTACAO e METEORO_G_VEL_ROTACAO
+	    printf("Velocidade de rotacao meteoro: %f\n", novo->meteoro.vel_rotacao);
+    } else if (tipo == 2){
+        novo->meteoro.vel_rotacao = ((float)(rand() % 100) / 100.0) * METEORO_M_VEL_ROTACAO - METEORO_M_VEL_ROTACAO; // entre -METEORO_M_VEL_ROTACAO e METEORO_M_VEL_ROTACAO
+        printf("Velocidade de rotacao meteoro: %f\n", novo->meteoro.vel_rotacao);
+    } 
+	
     novo->prox = *lista;
     *lista = novo;
 }
@@ -350,6 +361,12 @@ int main() {
         return -1;
 	}
 
+    ALLEGRO_BITMAP* spr_meteoro_m_1 = al_load_bitmap("tutorial1/spr_asteroide_medio_1.png");
+    if (!spr_meteoro_m_1) {
+        printf("Erro ao carregar spritespr_meteoro_m_1!\n");
+        return -1;
+    }
+
     
     bool keys[KEY_COUNT] = { false }; // array para armazenar o estado das teclas
     float x = SCREEN_W/2, y = SCREEN_H/2; 
@@ -457,10 +474,10 @@ int main() {
                     (int)atual->bala.x, (int)atual->bala.y, ESCALA, ESCALA, atual->bala.angulo, 0);
 
                 // debug desenha o colisor da bala
-                al_draw_line(atual->bala.vertices[0], atual->bala.vertices[1], atual->bala.vertices[2], atual->bala.vertices[3], al_map_rgb(255, 0, 255), 2);
-                al_draw_line(atual->bala.vertices[2], atual->bala.vertices[3], atual->bala.vertices[4], atual->bala.vertices[5], al_map_rgb(255, 0, 255), 2);
-                al_draw_line(atual->bala.vertices[4], atual->bala.vertices[5], atual->bala.vertices[6], atual->bala.vertices[7], al_map_rgb(255, 0, 255), 2);
-                al_draw_line(atual->bala.vertices[6], atual->bala.vertices[7], atual->bala.vertices[0], atual->bala.vertices[1], al_map_rgb(255, 0, 255), 2);
+                //al_draw_line(atual->bala.vertices[0], atual->bala.vertices[1], atual->bala.vertices[2], atual->bala.vertices[3], al_map_rgb(255, 0, 255), 2);
+                //al_draw_line(atual->bala.vertices[2], atual->bala.vertices[3], atual->bala.vertices[4], atual->bala.vertices[5], al_map_rgb(255, 0, 255), 2);
+                //al_draw_line(atual->bala.vertices[4], atual->bala.vertices[5], atual->bala.vertices[6], atual->bala.vertices[7], al_map_rgb(255, 0, 255), 2);
+                //al_draw_line(atual->bala.vertices[6], atual->bala.vertices[7], atual->bala.vertices[0], atual->bala.vertices[1], al_map_rgb(255, 0, 255), 2);
                 // Remove a bala se sair da tela
                 if (atual->bala.x < -SPR_BALA_T_W || atual->bala.x > SCREEN_W || atual->bala.y < -SPR_BALA_T_H || atual->bala.y > SCREEN_H) {
                     No_Bala* temp = atual;
@@ -484,55 +501,104 @@ int main() {
 			No_Meteoro* atual_m = lista_meteoros;
             while (atual_m != NULL) {
                 // Atualiza posi����o do meteoro
-                atual_m->meteoro.x += METEORO_G_SPEED * atual_m->meteoro.direcao_x;
-                atual_m->meteoro.y += METEORO_G_SPEED * atual_m->meteoro.direcao_y;
-                //atual_m->meteoro.angulo += atual_m->meteoro.vel_rotacao;
+                if (atual_m->meteoro.tipo == 1){
+                    atual_m->meteoro.x += METEORO_G_SPEED * atual_m->meteoro.direcao_x;
+                    atual_m->meteoro.y += METEORO_G_SPEED * atual_m->meteoro.direcao_y;
+                    atual_m->meteoro.angulo += atual_m->meteoro.vel_rotacao;
 
-                if(atual_m->meteoro.angulo >= 2 * ALLEGRO_PI) atual_m->meteoro.angulo = 0;
-				else if (atual_m->meteoro.angulo < 0) atual_m->meteoro.angulo = 2 * ALLEGRO_PI;
+                    if(atual_m->meteoro.angulo >= 2 * ALLEGRO_PI) atual_m->meteoro.angulo = 0;
+                    else if (atual_m->meteoro.angulo < 0) atual_m->meteoro.angulo = 2 * ALLEGRO_PI;
 
-                float half_w = SPR_METEORO_G_T_W * ESCALA / 2.0;
-                float half_h = SPR_METEORO_G_T_H * ESCALA / 4.0;
+                    float half_w = SPR_METEORO_G_T_W * ESCALA / 2.8;
+                    float half_h = SPR_METEORO_G_T_H * ESCALA / 4.8;
 
-                float angle = 3.0 * ALLEGRO_PI / 4.0; // 135 graus
-                float cosA = cos(angle);
-                float sinA = sin(angle);
+                    float angle = 3.0 * ALLEGRO_PI / 4.0; // 135 graus
+                    float cosA = cos(angle);
+                    float sinA = sin(angle);
 
-                float vx[4] = { -half_w, half_w, half_w , -half_w}; 
-                float vy[4] = { -half_h, -half_h, half_h, half_h};
+                    float vx[4] = { -half_w, half_w, half_w , -half_w}; 
+                    float vy[4] = { -half_h, -half_h, half_h, half_h};
 
-                // aplica rotação
-                float vxr[4], vyr[4];
-                vxr[0] = vx[0] * cosA - vy[0] * sinA;
-                vyr[0] = vx[0] * sinA + vy[0] * cosA;
+                    // aplica rotação
+                    float vxr[4], vyr[4];
+                    vxr[0] = vx[0] * cosA - vy[0] * sinA;
+                    vyr[0] = vx[0] * sinA + vy[0] * cosA;
 
-                vxr[1] = vx[1] * cosA - vy[1] * sinA;
-                vyr[1] = vx[1] * sinA + vy[1] * cosA;
+                    vxr[1] = vx[1] * cosA - vy[1] * sinA;
+                    vyr[1] = vx[1] * sinA + vy[1] * cosA;
 
-                vxr[2] = vx[2] * cosA - vy[2] * sinA;
-                vyr[2] = vx[2] * sinA + vy[2] * cosA;
+                    vxr[2] = vx[2] * cosA - vy[2] * sinA;
+                    vyr[2] = vx[2] * sinA + vy[2] * cosA;
 
-                vxr[3] = vx[3] * cosA - vy[3] * sinA;
-                vyr[3] = vx[3] * sinA + vy[3] * cosA;
+                    vxr[3] = vx[3] * cosA - vy[3] * sinA;
+                    vyr[3] = vx[3] * sinA + vy[3] * cosA;
 
 
-                // aplica rotação do meteoro e desloca para posição real
-                for (int i = 0; i < 4; i++) {
-                    float xr = vxr[i] * cos(atual_m->meteoro.angulo) - vyr[i] * sin(atual_m->meteoro.angulo);
-                    float yr = vxr[i] * sin(atual_m->meteoro.angulo) + vyr[i] * cos(atual_m->meteoro.angulo);
-                    atual_m->meteoro.vertives[i * 2] = atual_m->meteoro.x + xr;
-                    atual_m->meteoro.vertives[i * 2 + 1] = atual_m->meteoro.y + yr;
-                }
-				
-                // Mantem meteoro dentro da tela (teletransporte para o lado oposto)
-                if (atual_m->meteoro.x > SCREEN_W) atual_m->meteoro.x = -SPR_METEORO_G_T_W;
-                else if (atual_m->meteoro.x < -SPR_METEORO_G_T_W) atual_m->meteoro.x = SCREEN_W;
-                if (atual_m->meteoro.y > SCREEN_H) atual_m->meteoro.y = -SPR_METEORO_G_T_H;
-                else if (atual_m->meteoro.y < -SPR_METEORO_G_T_H) atual_m->meteoro.y = SCREEN_H;
-                // Desenha o meteoro
-                al_draw_tinted_scaled_rotated_bitmap_region(spr_meteoro_g, 0, 0, SPR_METEORO_G_T_W, SPR_METEORO_G_T_H,
+                    // aplica rotação do meteoro e desloca para posição real
+                    for (int i = 0; i < 4; i++) {
+                        float xr = vxr[i] * cos(atual_m->meteoro.angulo) - vyr[i] * sin(atual_m->meteoro.angulo);
+                        float yr = vxr[i] * sin(atual_m->meteoro.angulo) + vyr[i] * cos(atual_m->meteoro.angulo);
+                        atual_m->meteoro.vertives[i * 2] = atual_m->meteoro.x + xr;
+                        atual_m->meteoro.vertives[i * 2 + 1] = atual_m->meteoro.y + yr;
+                    }
+
+                    // debug desenha o colisor do meteoro
+                    al_draw_line(atual_m->meteoro.vertives[0], atual_m->meteoro.vertives[1], atual_m->meteoro.vertives[2], atual_m->meteoro.vertives[3], al_map_rgb(0, 255, 255), 2);
+                    al_draw_line(atual_m->meteoro.vertives[2], atual_m->meteoro.vertives[3], atual_m->meteoro.vertives[4], atual_m->meteoro.vertives[5], al_map_rgb(0, 255, 255), 2);
+                    al_draw_line(atual_m->meteoro.vertives[4], atual_m->meteoro.vertives[5], atual_m->meteoro.vertives[6], atual_m->meteoro.vertives[7], al_map_rgb(0, 255, 255), 2);
+                    al_draw_line(atual_m->meteoro.vertives[6], atual_m->meteoro.vertives[7], atual_m->meteoro.vertives[0], atual_m->meteoro.vertives[1], al_map_rgb(0, 255, 255), 2);
+                    
+                    // Mantem meteoro dentro da tela (teletransporte para o lado oposto)
+                    if (atual_m->meteoro.x > SCREEN_W) atual_m->meteoro.x = -SPR_METEORO_G_T_W;
+                    else if (atual_m->meteoro.x < -SPR_METEORO_G_T_W) atual_m->meteoro.x = SCREEN_W;
+                    if (atual_m->meteoro.y > SCREEN_H) atual_m->meteoro.y = -SPR_METEORO_G_T_H;
+                    else if (atual_m->meteoro.y < -SPR_METEORO_G_T_H) atual_m->meteoro.y = SCREEN_H;
+
+                    // Desenha o meteoro
+                    al_draw_tinted_scaled_rotated_bitmap_region(spr_meteoro_g, 0, 0, SPR_METEORO_G_T_W, SPR_METEORO_G_T_H,
                     al_map_rgb(255, 255, 255), SPR_METEORO_G_T_W / 2, SPR_METEORO_G_T_H / 2,
                     (int)atual_m->meteoro.x, (int)atual_m->meteoro.y, ESCALA, ESCALA, atual_m->meteoro.angulo, 0);
+
+                } else if (atual_m->meteoro.tipo == 2){
+                    atual_m->meteoro.x += METEORO_M_SPEED * atual_m->meteoro.direcao_x;
+                    atual_m->meteoro.y += METEORO_M_SPEED * atual_m->meteoro.direcao_y;
+                    atual_m->meteoro.angulo += atual_m->meteoro.vel_rotacao;
+
+                    if(atual_m->meteoro.angulo >= 2 * ALLEGRO_PI) atual_m->meteoro.angulo = 0;
+                    else if (atual_m->meteoro.angulo < 0) atual_m->meteoro.angulo = 2 * ALLEGRO_PI;
+
+                    float half_w = SPR_METEORO_M_T_W * ESCALA * 0.35;
+                    float half_h = SPR_METEORO_M_T_H * ESCALA * 0.35;
+
+                    float vx[4] = { -half_w, half_w, half_w , -half_w}; 
+                    float vy[4] = { -half_h, -half_h, half_h, half_h};
+
+
+                    for (int i = 0; i < 4; i++) {
+                        float xr = vx[i] * cos(atual_m->meteoro.angulo) - vy[i] * sin(atual_m->meteoro.angulo);
+                        float yr = vx[i] * sin(atual_m->meteoro.angulo) + vy[i] * cos(atual_m->meteoro.angulo);
+                        atual_m->meteoro.vertives[i * 2] = atual_m->meteoro.x + xr;
+                        atual_m->meteoro.vertives[i * 2 + 1] = atual_m->meteoro.y + yr;
+                    }
+
+                    if (atual_m->meteoro.x > SCREEN_W) atual_m->meteoro.x = -SPR_METEORO_M_T_W;
+                    else if (atual_m->meteoro.x < -SPR_METEORO_M_T_W) atual_m->meteoro.x = SCREEN_W;
+                    if (atual_m->meteoro.y > SCREEN_H) atual_m->meteoro.y = -SPR_METEORO_M_T_H;
+                    else if (atual_m->meteoro.y < -SPR_METEORO_M_T_H) atual_m->meteoro.y = SCREEN_H;
+
+                    // debug desenha o colisor do meteoro
+                    al_draw_line(atual_m->meteoro.vertives[0], atual_m->meteoro.vertives[1], atual_m->meteoro.vertives[2], atual_m->meteoro.vertives[3], al_map_rgb(0, 255, 255), 2);
+                    al_draw_line(atual_m->meteoro.vertives[2], atual_m->meteoro.vertives[3], atual_m->meteoro.vertives[4], atual_m->meteoro.vertives[5], al_map_rgb(0, 255, 255), 2);
+                    al_draw_line(atual_m->meteoro.vertives[4], atual_m->meteoro.vertives[5], atual_m->meteoro.vertives[6], atual_m->meteoro.vertives[7], al_map_rgb(0, 255, 255), 2);
+                    al_draw_line(atual_m->meteoro.vertives[6], atual_m->meteoro.vertives[7], atual_m->meteoro.vertives[0], atual_m->meteoro.vertives[1], al_map_rgb(0, 255, 255), 2);
+
+                    al_draw_tinted_scaled_rotated_bitmap_region(spr_meteoro_m_1, 0, 0, SPR_METEORO_M_T_W, SPR_METEORO_M_T_H,
+                    al_map_rgb(255, 255, 255), SPR_METEORO_M_T_W / 2, SPR_METEORO_M_T_H / 2,
+                    (int)atual_m->meteoro.x, (int)atual_m->meteoro.y, ESCALA, ESCALA, atual_m->meteoro.angulo, 0);
+                }
+                
+                
+                
 
                 
                 ant_m = atual_m;
@@ -633,11 +699,21 @@ int main() {
 
                         // aplica dano e verifica remoção do meteoro
                         if (--m->meteoro.vida <= 0) {
+
+							// meteoro cria novos meteoros menores ao ser destruído
+                            if (m->meteoro.tipo == 1) {
+                                // se for meteoro grande, cria 2 médios
+                                insere_meteoro(&lista_meteoros, m->meteoro.x, m->meteoro.y, 0, 2, METEORO_M_VIDA);
+                                insere_meteoro(&lista_meteoros, m->meteoro.x, m->meteoro.y, 0, 2, METEORO_M_VIDA);
+                                insere_meteoro(&lista_meteoros, m->meteoro.x, m->meteoro.y, 0, 2, METEORO_M_VIDA);
+                            }
+
                             // remove meteoro atual
                             *pm = m->prox;   // desvincula o nó
                             free(m);
                             pontos += 10;
                             meteor_removed = true;
+                            
                             break;           // para de checar balas: meteoro já não existe
                         }
                         // se o meteoro ainda vive, 'pb' já aponta para o próximo (por causa de *pb = b->prox)
