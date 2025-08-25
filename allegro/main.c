@@ -48,6 +48,7 @@ typedef struct{
 	float vertives[8]; // numero de vertices do colisor do meteoro (retangulo)
     short vida;
     short tipo; // 1-grande, 2-medio, 3-pequeno
+    short sprite; // 1, 2 ou 3 (para os meteoros médios e pequenos)
 }Meteoro;
 
 typedef struct no_bala{
@@ -236,6 +237,8 @@ void insere_meteoro(No_Meteoro** lista, float x, float y, float angulo, short ti
         novo->meteoro.vel_rotacao = ((float)(rand() % 100) / 100.0) * METEORO_G_VEL_ROTACAO - METEORO_G_VEL_ROTACAO; // entre -METEORO_G_VEL_ROTACAO e METEORO_G_VEL_ROTACAO
 	    printf("Velocidade de rotacao meteoro: %f\n", novo->meteoro.vel_rotacao);
     } else if (tipo == 2){
+        // escolhe um sprite aleatorio para o meteoro médio
+        novo->meteoro.sprite = (rand() % 3) + 1; // 1, 2 ou 3
         novo->meteoro.vel_rotacao = ((float)(rand() % 100) / 100.0) * METEORO_M_VEL_ROTACAO - METEORO_M_VEL_ROTACAO; // entre -METEORO_M_VEL_ROTACAO e METEORO_M_VEL_ROTACAO
         printf("Velocidade de rotacao meteoro: %f\n", novo->meteoro.vel_rotacao);
     } 
@@ -364,6 +367,18 @@ int main() {
     ALLEGRO_BITMAP* spr_meteoro_m_1 = al_load_bitmap("tutorial1/spr_asteroide_medio_1.png");
     if (!spr_meteoro_m_1) {
         printf("Erro ao carregar spritespr_meteoro_m_1!\n");
+        return -1;
+    }
+
+    ALLEGRO_BITMAP* spr_meteoro_m_2 = al_load_bitmap("tutorial1/spr_asteroide_medio_2.png");
+    if (!spr_meteoro_m_2) {
+        printf("Erro ao carregar spritespr_meteoro_m_2!\n");
+        return -1;
+    }
+
+    ALLEGRO_BITMAP* spr_meteoro_m_3 = al_load_bitmap("tutorial1/spr_asteroide_medio_3.png");
+    if (!spr_meteoro_m_3) {
+        printf("Erro ao carregar spritespr_meteoro_m_3!\n");
         return -1;
     }
 
@@ -592,14 +607,20 @@ int main() {
                     al_draw_line(atual_m->meteoro.vertives[4], atual_m->meteoro.vertives[5], atual_m->meteoro.vertives[6], atual_m->meteoro.vertives[7], al_map_rgb(0, 255, 255), 2);
                     al_draw_line(atual_m->meteoro.vertives[6], atual_m->meteoro.vertives[7], atual_m->meteoro.vertives[0], atual_m->meteoro.vertives[1], al_map_rgb(0, 255, 255), 2);
 
-                    al_draw_tinted_scaled_rotated_bitmap_region(spr_meteoro_m_1, 0, 0, SPR_METEORO_M_T_W, SPR_METEORO_M_T_H,
-                    al_map_rgb(255, 255, 255), SPR_METEORO_M_T_W / 2, SPR_METEORO_M_T_H / 2,
-                    (int)atual_m->meteoro.x, (int)atual_m->meteoro.y, ESCALA, ESCALA, atual_m->meteoro.angulo, 0);
+                    if (atual_m->meteoro.sprite == 1){
+                        al_draw_tinted_scaled_rotated_bitmap_region(spr_meteoro_m_1, 0, 0, SPR_METEORO_M_T_W, SPR_METEORO_M_T_H,
+                        al_map_rgb(255, 255, 255), SPR_METEORO_M_T_W / 2, SPR_METEORO_M_T_H / 2,
+                        (int)atual_m->meteoro.x, (int)atual_m->meteoro.y, ESCALA, ESCALA, atual_m->meteoro.angulo, 0);
+                    } else if (atual_m->meteoro.sprite == 2){
+                        al_draw_tinted_scaled_rotated_bitmap_region(spr_meteoro_m_2, 0, 0, SPR_METEORO_M_T_W, SPR_METEORO_M_T_H,
+                        al_map_rgb(255, 255, 255), SPR_METEORO_M_T_W / 2, SPR_METEORO_M_T_H / 2,
+                        (int)atual_m->meteoro.x, (int)atual_m->meteoro.y, ESCALA, ESCALA, atual_m->meteoro.angulo, 0);
+                    } else{
+                        al_draw_tinted_scaled_rotated_bitmap_region(spr_meteoro_m_3, 0, 0, SPR_METEORO_M_T_W, SPR_METEORO_M_T_H,
+                        al_map_rgb(255, 255, 255), SPR_METEORO_M_T_W / 2, SPR_METEORO_M_T_H / 2,
+                        (int)atual_m->meteoro.x, (int)atual_m->meteoro.y, ESCALA, ESCALA, atual_m->meteoro.angulo, 0);
+                    }
                 }
-                
-                
-                
-
                 
                 ant_m = atual_m;
                 atual_m = atual_m->prox;
