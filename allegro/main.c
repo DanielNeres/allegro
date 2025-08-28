@@ -639,10 +639,22 @@ int main() {
                     else if (atual_m->meteoro.y < -SPR_METEORO_M_T_H) atual_m->meteoro.y = SCREEN_H;
 
                     // debug desenha o colisor do meteoro
-                    /*al_draw_line(atual_m->meteoro.vertives[0], atual_m->meteoro.vertives[1], atual_m->meteoro.vertives[2], atual_m->meteoro.vertives[3], al_map_rgb(0, 255, 255), 2);
+                    al_draw_line(atual_m->meteoro.vertives[0], atual_m->meteoro.vertives[1], atual_m->meteoro.vertives[2], atual_m->meteoro.vertives[3], al_map_rgb(0, 255, 255), 2);
                     al_draw_line(atual_m->meteoro.vertives[2], atual_m->meteoro.vertives[3], atual_m->meteoro.vertives[4], atual_m->meteoro.vertives[5], al_map_rgb(0, 255, 255), 2);
                     al_draw_line(atual_m->meteoro.vertives[4], atual_m->meteoro.vertives[5], atual_m->meteoro.vertives[6], atual_m->meteoro.vertives[7], al_map_rgb(0, 255, 255), 2);
-                    al_draw_line(atual_m->meteoro.vertives[6], atual_m->meteoro.vertives[7], atual_m->meteoro.vertives[0], atual_m->meteoro.vertives[1], al_map_rgb(0, 255, 255), 2);*/
+                    al_draw_line(atual_m->meteoro.vertives[6], atual_m->meteoro.vertives[7], atual_m->meteoro.vertives[0], atual_m->meteoro.vertives[1], al_map_rgb(0, 255, 255), 2);
+
+
+                    // debug pausa aqui para ver o colisor
+                    /*while (true){
+                        al_wait_for_event(queue, &ev);
+                        if (ALLEGRO_EVENT_KEY_DOWN){
+                            break;
+                        }
+                        //al_flip_display();
+                        
+                    }*/
+                    
 
                     if (atual_m->meteoro.sprite == 1){
                         al_draw_tinted_scaled_rotated_bitmap_region(spr_meteoro_m_1, 0, 0, SPR_METEORO_M_T_W, SPR_METEORO_M_T_H,
@@ -806,6 +818,12 @@ int main() {
                         // aplica dano e verifica remoção do meteoro
                         if (--m->meteoro.vida <= 0) {
 
+                            // remove meteoro atual
+                            *pm = m->prox;   // desvincula o nó
+                            free(m);
+                            
+                            meteor_removed = true;
+
 							// meteoro cria novos meteoros menores ao ser destruído
                             if (m->meteoro.tipo == 1) {
                                 // se for meteoro grande, cria 2 médios
@@ -822,12 +840,6 @@ int main() {
                             } else{
                                pontos += 2;
                             }
-
-                            // remove meteoro atual
-                            *pm = m->prox;   // desvincula o nó
-                            free(m);
-                            
-                            meteor_removed = true;
                             
                             break;           // para de checar balas: meteoro já não existe
                         }
@@ -887,6 +899,8 @@ int main() {
     al_destroy_bitmap(spr_meteoro_p_1);
     al_destroy_bitmap(spr_meteoro_p_2);
     al_destroy_bitmap(spr_meteoro_p_3);
+    al_destroy_bitmap(spr_coracao);
+    al_destroy_sample(som_hit);
     al_destroy_sample(som_tiro);
     al_destroy_font(fonte);
     al_destroy_display(display);
