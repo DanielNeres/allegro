@@ -243,16 +243,61 @@ void insere_meteoro(No_Meteoro** lista, float x, float y, float angulo, short ti
     if (tipo == 1){
         novo->meteoro.vel_rotacao = ((float)(rand() % 100) / 100.0) * METEORO_G_VEL_ROTACAO - METEORO_G_VEL_ROTACAO; // entre -METEORO_G_VEL_ROTACAO e METEORO_G_VEL_ROTACAO
 	    //printf("Velocidade de rotacao meteoro: %f\n", novo->meteoro.vel_rotacao);
+
+        // calculo dos vertices do colisor do meteoro grande
+        float half_w = SPR_METEORO_G_T_W * ESCALA / 2.8;
+        float half_h = SPR_METEORO_G_T_H * ESCALA / 4.8;
+
+        float angle = 3.0 * ALLEGRO_PI / 4.0; // 135 graus
+        float cosA = cos(angle);
+        float sinA = sin(angle);
+        float vx[4] = { -half_w, half_w, half_w , -half_w};
+        float vy[4] = { -half_h, -half_h, half_h, half_h};
+        // aplica rotação
+        for (int i = 0; i < 4; i++) {
+            float rx = vx[i] * cosA - vy[i] * sinA;
+            float ry = vx[i] * sinA + vy[i] * cosA;
+
+            novo->meteoro.vertives[i * 2]     = rx + x;
+            novo->meteoro.vertives[i * 2 + 1] = ry + y;
+        }
+
     } else if (tipo == 2){
         // escolhe um sprite aleatorio para o meteoro médio
         novo->meteoro.sprite = (rand() % 3) + 1; // 1, 2 ou 3
         novo->meteoro.vel_rotacao = ((float)(rand() % 100) / 100.0) * METEORO_M_VEL_ROTACAO - METEORO_M_VEL_ROTACAO; // entre -METEORO_M_VEL_ROTACAO e METEORO_M_VEL_ROTACAO
         //printf("Velocidade de rotacao meteoro: %f\n", novo->meteoro.vel_rotacao);
+
+        // calculo dos vertices do colisor do meteoro médio
+        float half_w = SPR_METEORO_M_T_W * ESCALA * 0.35;
+        float half_h = SPR_METEORO_M_T_H * ESCALA * 0.35;
+
+        float vx[4] = { -half_w, half_w, half_w , -half_w};
+        float vy[4] = { -half_h, -half_h, half_h, half_h};
+
+        for(int i = 0; i < 4; i++){
+            novo->meteoro.vertives[i * 2]     = vx[i] + x;
+            novo->meteoro.vertives[i * 2 + 1] = vy[i] + y;
+        }
+        
+
     } else{
         // escolhe um sprite aleatorio para o meteoro pequeno
         novo->meteoro.sprite = (rand() % 3) + 1; // 1, 2 ou 3
         novo->meteoro.vel_rotacao = ((float)(rand() % 100) / 100.0) * METEORO_P_VEL_ROTACAO - METEORO_P_VEL_ROTACAO; // entre -METEORO_P_VEL_ROTACAO e METEORO_P_VEL_ROTACAO
         //printf("Velocidade de rotacao meteoro: %f\n", novo->meteoro.vel_rotacao);
+
+        // calculo dos vertices do colisor do meteoro pequeno
+        float half_w = SPR_METEORO_P_T_W * ESCALA * 0.35;
+        float half_h = SPR_METEORO_P_T_H * ESCALA * 0.35;
+
+        float vx[4] = { -half_w, half_w, half_w , -half_w};
+        float vy[4] = { -half_h, -half_h, half_h, half_h};
+
+        for(int i = 0; i < 4; i++){
+            novo->meteoro.vertives[i * 2]     = vx[i] + x;
+            novo->meteoro.vertives[i * 2 + 1] = vy[i] + y;
+        }
     }
     
 	
@@ -530,6 +575,7 @@ int main() {
                 //al_draw_line(atual->bala.vertices[2], atual->bala.vertices[3], atual->bala.vertices[4], atual->bala.vertices[5], al_map_rgb(255, 0, 255), 2);
                 //al_draw_line(atual->bala.vertices[4], atual->bala.vertices[5], atual->bala.vertices[6], atual->bala.vertices[7], al_map_rgb(255, 0, 255), 2);
                 //al_draw_line(atual->bala.vertices[6], atual->bala.vertices[7], atual->bala.vertices[0], atual->bala.vertices[1], al_map_rgb(255, 0, 255), 2);
+                
                 // Remove a bala se sair da tela
                 if (atual->bala.x < -SPR_BALA_T_W || atual->bala.x > SCREEN_W || atual->bala.y < -SPR_BALA_T_H || atual->bala.y > SCREEN_H) {
                     No_Bala* temp = atual;
