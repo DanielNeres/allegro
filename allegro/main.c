@@ -39,9 +39,12 @@
 #define METEORO_P_VEL_ROTACAO 0.15 // velocidade de rotação do meteoro médio
 #define SPR_CORACAO_T_W 32  // largura de um frame da sprite do coração
 #define SPR_CORACAO_T_H 32  // altura de um frame da sprite do coração
-#define SPR_ESTRELAS_T_W 48  // largura de um frame da sprite da estrela
-#define SPR_ESTRELAS_T_H 48  // altura de um frame da sprite da estrela
-#define NUM_ESTRELAS 20 // Exemplo: 20 estrelas
+#define SPR_ESTRELAS_G_T_W 8  // largura de um frame da sprite da estrela
+#define SPR_ESTRELAS_G_T_H 8  // altura de um frame da sprite da estrela
+#define NUM_ESTRELAS_G 400 // numero de estrelas
+#define SPR_ESTRELAS_P_T_W 4  // largura de um frame da sprite da estrela
+#define SPR_ESTRELAS_P_T_H 4  // altura de um frame da sprite da estrela
+#define NUM_ESTRELAS_P 600 // numero de estrelas
 
 
 typedef struct{
@@ -326,7 +329,7 @@ void salva_pontuacao(int pontos) {
 }
 
 
-enum KEYS { UP, LEFT, RIGHT, SPACE, KEY_COUNT };
+enum KEYS { UP, LEFT, RIGHT, SPACE, KEY_COUNT, PAUSE_P };
 
 int main() {
 
@@ -485,9 +488,15 @@ int main() {
         return -1;
     }
 
-    ALLEGRO_BITMAP* spr_estrelas = al_load_bitmap("tutorial1/spr_estrelas.png");
-    if (!spr_estrelas) {
-        printf("Erro ao carregar spritespr_estrelas!\n");
+    ALLEGRO_BITMAP* spr_estrela_grande = al_load_bitmap("tutorial1/spr_estrela_grande.png");
+    if (!spr_estrela_grande) {
+        printf("Erro ao carregar spritespr_estrela_grande!\n");
+        return -1;
+    }
+
+    ALLEGRO_BITMAP* spr_estrela_pequena = al_load_bitmap("tutorial1/spr_estrela_pequena.png");
+    if (!spr_estrela_pequena) {
+        printf("Erro ao carregar spritespr_estrela_pequena!\n");
         return -1;
     }
 
@@ -502,18 +511,22 @@ int main() {
     float angulo = 0;
     short vida = 3;
     int pontos = 0;
-    short escala_das_estrelas = 4;
+    short escala_das_estrelas = 3;
     ALLEGRO_COLOR color = al_map_rgb(255, 255, 255); // cor branca (padrão)
     float rotacao_por_segundo = 4.0 / 60.0;
 	No_Bala* lista_balas = NULL; // Lista encadeada para armazenar as balas
 	No_Meteoro* lista_meteoros = NULL; // Lista encadeada para armazenar os meteoros
-    float estrelas_x[NUM_ESTRELAS], estrelas_y[NUM_ESTRELAS]; // posições das estrelas
-
-    for (int i = 0; i < NUM_ESTRELAS; i++){
-        estrelas_x[i] = rand() % SCREEN_W;
-        estrelas_y[i] = rand() % SCREEN_H;
+    // posição das estrelas de fundo
+    Ponto estrelas_g[NUM_ESTRELAS_G];
+    Ponto estrelas_p[NUM_ESTRELAS_P];
+    for (int i = 0; i < NUM_ESTRELAS_G; i++){
+        estrelas_g[i].x = rand()%SCREEN_W - SPR_ESTRELAS_G_T_W;
+        estrelas_g[i].y = rand()%SCREEN_H - SPR_ESTRELAS_G_T_H;
     }
-    
+    for (int i = 0; i < NUM_ESTRELAS_P; i++){
+        estrelas_p[i].x = rand()%SCREEN_W - SPR_ESTRELAS_P_T_W;
+        estrelas_p[i].y = rand()%SCREEN_H - SPR_ESTRELAS_P_T_H;
+    }
 
     al_start_timer(timer);
 
@@ -538,6 +551,7 @@ int main() {
             case ALLEGRO_KEY_LEFT:   keys[LEFT] = true; break;
             case ALLEGRO_KEY_RIGHT:  keys[RIGHT] = true; break;
             case ALLEGRO_KEY_SPACE:  keys[SPACE] = true; break;
+            case ALLEGRO_KEY_P:      keys[PAUSE_P] = true; /*printf("estou aqui %d\n", keys[PAUSE_P]); debug*/ break;
             }
         } else if (ev.type == ALLEGRO_EVENT_KEY_UP) {
             // logica para verificar quais teclas não estão mais apertadas
@@ -562,7 +576,15 @@ int main() {
             al_clear_to_color(al_map_rgb(0, 0, 0));
 
             // Desenha estrelas de fundo
-
+            for (int i = 0; i < NUM_ESTRELAS_P; i++){
+                al_draw_scaled_bitmap(spr_estrela_pequena, 0, 0, SPR_ESTRELAS_P_T_W, SPR_ESTRELAS_P_T_H,
+                    estrelas_p[i].x, estrelas_p[i].y, escala_das_estrelas * SPR_ESTRELAS_P_T_W, escala_das_estrelas * SPR_ESTRELAS_P_T_H, 0);
+            }
+            for (int i = 0; i < NUM_ESTRELAS_G; i++){
+                al_draw_scaled_bitmap(spr_estrela_grande, 0, 0, SPR_ESTRELAS_G_T_W, SPR_ESTRELAS_G_T_H,
+                    estrelas_g[i].x, estrelas_g[i].y, SPR_ESTRELAS_G_T_W, SPR_ESTRELAS_G_T_H, 0);
+            }
+            
 
             
             if (keys[LEFT]) {
@@ -961,6 +983,15 @@ int main() {
                     SPR_CORACAO_T_W * 3, SPR_CORACAO_T_H * 3, 0);
             }
 
+            // depois eu faço
+            /*if(keys[PAUSE_P]) {
+                // desenha umm retangulo semi-transparente sobre a tela e o texto "PAUSADO"
+                
+                al_draw_rectangle(0, 0, SCREEN_W, SCREEN_H, al_map_rgba(0, 0, 0, 128), 0);
+                al_draw_textf(fonte, al_map_rgb(255, 255, 255), SCREEN_W / 2, SCREEN_H / 2, 0, "PAUSADO");
+                printf("Pausado\n");
+            }*/
+
 
             al_flip_display();
         }
@@ -981,7 +1012,8 @@ int main() {
     al_destroy_bitmap(spr_meteoro_p_2);
     al_destroy_bitmap(spr_meteoro_p_3);
     al_destroy_bitmap(spr_coracao);
-    al_destroy_bitmap(spr_estrelas);
+    al_destroy_bitmap(spr_estrela_grande);
+    al_destroy_bitmap(spr_estrela_pequena);
     al_destroy_sample(som_hit);
     al_destroy_sample(som_tiro);
     al_destroy_font(fonte);

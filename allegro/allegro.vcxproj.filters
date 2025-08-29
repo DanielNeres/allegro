@@ -87,6 +87,12 @@
     <Image Include="tutorial1\spr_nave_projetil.png">
       <Filter>Arquivos de Recurso</Filter>
     </Image>
+    <Image Include="tutorial1\spr_estrela_grande.png">
+      <Filter>Arquivos de Recurso</Filter>
+    </Image>
+    <Image Include="tutorial1\spr_estrelas - Copia - Copia.png">
+      <Filter>Arquivos de Recurso</Filter>
+    </Image>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.c">
