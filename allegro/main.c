@@ -39,6 +39,9 @@
 #define METEORO_P_VEL_ROTACAO 0.15 // velocidade de rotação do meteoro médio
 #define SPR_CORACAO_T_W 32  // largura de um frame da sprite do coração
 #define SPR_CORACAO_T_H 32  // altura de um frame da sprite do coração
+#define SPR_ESTRELAS_T_W 48  // largura de um frame da sprite da estrela
+#define SPR_ESTRELAS_T_H 48  // altura de um frame da sprite da estrela
+#define NUM_ESTRELAS 20 // Exemplo: 20 estrelas
 
 
 typedef struct{
@@ -67,11 +70,6 @@ typedef struct no_meteoro{
     Meteoro meteoro;
     struct no_meteoro* prox;
 }No_Meteoro;
-
-typedef struct {
-    float x, y;
-    float lado;
-} Colision_Quadrado;
 
 typedef struct {
     float x, y;
@@ -305,6 +303,29 @@ void insere_meteoro(No_Meteoro** lista, float x, float y, float angulo, short ti
     *lista = novo;
 }
 
+void salva_pontuacao(int pontos) {
+    FILE *file = fopen("pontuacao.txt", "a+");
+    if (file == NULL) {
+        printf("Erro ao abrir arquivo para salvar pontuação!\n");
+        return;
+    }
+
+    // Primeiro conta quantos jogos já existem
+    int numero_jogos = 0;
+    char linha[100];
+
+    rewind(file); // volta para o início
+    while (fgets(linha, sizeof(linha), file)) {
+        numero_jogos++;
+    }
+
+    // Escreve a nova pontuação
+    fprintf(file, "jogo %d = %d pontos\n", numero_jogos, pontos);
+
+    fclose(file);
+}
+
+
 enum KEYS { UP, LEFT, RIGHT, SPACE, KEY_COUNT };
 
 int main() {
@@ -464,6 +485,12 @@ int main() {
         return -1;
     }
 
+    ALLEGRO_BITMAP* spr_estrelas = al_load_bitmap("tutorial1/spr_estrelas.png");
+    if (!spr_estrelas) {
+        printf("Erro ao carregar spritespr_estrelas!\n");
+        return -1;
+    }
+
     
     bool keys[KEY_COUNT] = { false }; // array para armazenar o estado das teclas
     float x = SCREEN_W/2, y = SCREEN_H/2; 
@@ -475,22 +502,24 @@ int main() {
     float angulo = 0;
     short vida = 3;
     int pontos = 0;
+    short escala_das_estrelas = 4;
     ALLEGRO_COLOR color = al_map_rgb(255, 255, 255); // cor branca (padrão)
     float rotacao_por_segundo = 4.0 / 60.0;
 	No_Bala* lista_balas = NULL; // Lista encadeada para armazenar as balas
 	No_Meteoro* lista_meteoros = NULL; // Lista encadeada para armazenar os meteoros
+    float estrelas_x[NUM_ESTRELAS], estrelas_y[NUM_ESTRELAS]; // posições das estrelas
 
+    for (int i = 0; i < NUM_ESTRELAS; i++){
+        estrelas_x[i] = rand() % SCREEN_W;
+        estrelas_y[i] = rand() % SCREEN_H;
+    }
+    
 
     al_start_timer(timer);
 
 	// insere 2 meteoros grandes
 	insere_meteoro(&lista_meteoros, 100, 100, 0, 1, METEORO_G_VIDA);
     insere_meteoro(&lista_meteoros, 400, 400, 0, 1, METEORO_G_VIDA);
-
-    Colision_Quadrado box_meteoro;
-    box_meteoro.x = 600;
-    box_meteoro.y = 400;
-    box_meteoro.lado = 100;
 
 
     bool running = true;
@@ -531,6 +560,9 @@ int main() {
 
             // Limpa tela
             al_clear_to_color(al_map_rgb(0, 0, 0));
+
+            // Desenha estrelas de fundo
+
 
             
             if (keys[LEFT]) {
@@ -934,6 +966,9 @@ int main() {
         }
     }
 
+    // Fim do jogo
+    salva_pontuacao(pontos);
+
     // Libera os recursos criados (padrão) 
     al_destroy_bitmap(spr_nave_movendo);
     al_destroy_bitmap(spr_nave_parada);
@@ -946,6 +981,7 @@ int main() {
     al_destroy_bitmap(spr_meteoro_p_2);
     al_destroy_bitmap(spr_meteoro_p_3);
     al_destroy_bitmap(spr_coracao);
+    al_destroy_bitmap(spr_estrelas);
     al_destroy_sample(som_hit);
     al_destroy_sample(som_tiro);
     al_destroy_font(fonte);
