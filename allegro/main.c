@@ -511,7 +511,7 @@ int main() {
     float angulo = 0;
     short vida = 3;
     int pontos = 0;
-    short escala_das_estrelas = 3;
+    short escala_das_estrelas = 2.3;
     ALLEGRO_COLOR color = al_map_rgb(255, 255, 255); // cor branca (padrão)
     float rotacao_por_segundo = 4.0 / 60.0;
 	No_Bala* lista_balas = NULL; // Lista encadeada para armazenar as balas
@@ -582,7 +582,7 @@ int main() {
             }
             for (int i = 0; i < NUM_ESTRELAS_G; i++){
                 al_draw_scaled_bitmap(spr_estrela_grande, 0, 0, SPR_ESTRELAS_G_T_W, SPR_ESTRELAS_G_T_H,
-                    estrelas_g[i].x, estrelas_g[i].y, SPR_ESTRELAS_G_T_W, SPR_ESTRELAS_G_T_H, 0);
+                    estrelas_g[i].x, estrelas_g[i].y,  escala_das_estrelas * SPR_ESTRELAS_G_T_W,  escala_das_estrelas * SPR_ESTRELAS_G_T_H, 0);
             }
             
 
