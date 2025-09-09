@@ -1,52 +1,4 @@
-#include <allegro5/allegro.h>
-#include <allegro5/allegro_image.h>
-#include <allegro5/allegro_primitives.h>
-#include <allegro5/allegro_audio.h>
-#include <allegro5/allegro_acodec.h>
-#include <allegro5/allegro_font.h>
-#include <allegro5/allegro_ttf.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <math.h>
-#include <stdbool.h>    
-
-#define SCREEN_W 2500 // tamanho da janela em largura
-#define SCREEN_H 1500 // tamanho da janela em altura
-#define ESCALA 4 // ESCALA dos sprites
-#define SPR_NAVE_T_W 41   // largura de um frame da sprite
-#define SPR_NAVE_T_H 32   // altura de um frame
-#define FRAME_COUNT 5 // qtd de frames no spritespr_nave
-#define SPEED 7     // velocidade
-#define TEMPO_ENTRE_COLISIONS 2 // tempo minimo entre tiros em colisões entre a nave e um meteoro em segundos
-#define SPR_BALA_T_W 13   // largura de um frame da sprite da bala
-#define SPR_BALA_T_H 5   // altura de um frame da sprite da bala
-#define BALA_SPEED 14 // velocidade da bala
-#define TEMPO_ENTRE_BALAS 0.45 // tempo minimo entre tiros em segundos
-#define SPR_METEORO_G_T_W 48   // largura de um frame da sprite do meteoro grande
-#define SPR_METEORO_G_T_H 48   // altura de um frame da sprite do meteoro grande
-#define METEORO_G_SPEED 5 // velocidade do meteoro grande
-#define METEORO_G_VIDA 3 // vida do meteoro grande
-#define METEORO_G_VEL_ROTACAO 0.06 // velocidade de rotação do meteoro grande
-#define SPR_METEORO_M_T_W 32   // largura de um frame da sprite do meteoro médio
-#define SPR_METEORO_M_T_H 32   // altura de um frame da sprite do meteoro médio
-#define METEORO_M_SPEED 8 // velocidade do meteoro médio
-#define METEORO_M_VIDA 2 // vida do meteoro médio
-#define METEORO_M_VEL_ROTACAO 0.1 // velocidade de rotação do meteoro médio
-#define SPR_METEORO_P_T_W 16   // largura de um frame da sprite do meteoro médio
-#define SPR_METEORO_P_T_H 16   // altura de um frame da sprite do meteoro médio
-#define METEORO_P_SPEED 12 // velocidade do meteoro médio
-#define METEORO_P_VIDA 1 // vida do meteoro médio
-#define METEORO_P_VEL_ROTACAO 0.15 // velocidade de rotação do meteoro médio
-#define SPR_CORACAO_T_W 32  // largura de um frame da sprite do coração
-#define SPR_CORACAO_T_H 32  // altura de um frame da sprite do coração
-#define SPR_ESTRELAS_G_T_W 8  // largura de um frame da sprite da estrela
-#define SPR_ESTRELAS_G_T_H 8  // altura de um frame da sprite da estrela
-#define NUM_ESTRELAS_G 400 // numero de estrelas
-#define SPR_ESTRELAS_P_T_W 4  // largura de um frame da sprite da estrela
-#define SPR_ESTRELAS_P_T_H 4  // altura de um frame da sprite da estrela
-#define NUM_ESTRELAS_P 600 // numero de estrelas
-
-
+#include "funcoes.h"
 typedef struct{
     float x, y;
     float angulo;
@@ -74,10 +26,7 @@ typedef struct no_meteoro{
     struct no_meteoro* prox;
 }No_Meteoro;
 
-typedef struct {
-    float x, y;
-} Ponto;
-
+/*
 // produto vetorial 2D
 float cross(Ponto a, Ponto b, Ponto c) {
     return (b.x - a.x) * (c.y - a.y) -
@@ -196,7 +145,7 @@ bool colide_retangulos(float *vertsA, float *vertsB) {
         }
     }
     return true; // todas projeções se sobrepõem → colisão
-}
+}*/
 
 
 void insere_bala(No_Bala** lista, float x, float y, float angulo){
@@ -327,6 +276,18 @@ void salva_pontuacao(int pontos) {
 
     fclose(file);
 }
+
+void desenha_estrelas(ALLEGRO_BITMAP* spr_estrela_pequena, ALLEGRO_BITMAP* spr_estrela_grande, Ponto* estrelas_p, Ponto* estrelas_g, float escala_das_estrelas){
+    for (int i = 0; i < NUM_ESTRELAS_P; i++){
+        al_draw_scaled_bitmap(spr_estrela_pequena, 0, 0, SPR_ESTRELAS_P_T_W, SPR_ESTRELAS_P_T_H,
+            estrelas_p[i].x, estrelas_p[i].y, escala_das_estrelas * SPR_ESTRELAS_P_T_W, escala_das_estrelas * SPR_ESTRELAS_P_T_H, 0);
+    }
+    for (int i = 0; i < NUM_ESTRELAS_G; i++){
+        al_draw_scaled_bitmap(spr_estrela_grande, 0, 0, SPR_ESTRELAS_G_T_W, SPR_ESTRELAS_G_T_H,
+            estrelas_g[i].x, estrelas_g[i].y,  escala_das_estrelas * SPR_ESTRELAS_G_T_W,  escala_das_estrelas * SPR_ESTRELAS_G_T_H, 0);
+    }
+}
+
 
 
 enum KEYS { UP, LEFT, RIGHT, SPACE, KEY_COUNT, PAUSE_P };
@@ -576,15 +537,7 @@ int main() {
             al_clear_to_color(al_map_rgb(0, 0, 0));
 
             // Desenha estrelas de fundo
-            for (int i = 0; i < NUM_ESTRELAS_P; i++){
-                al_draw_scaled_bitmap(spr_estrela_pequena, 0, 0, SPR_ESTRELAS_P_T_W, SPR_ESTRELAS_P_T_H,
-                    estrelas_p[i].x, estrelas_p[i].y, escala_das_estrelas * SPR_ESTRELAS_P_T_W, escala_das_estrelas * SPR_ESTRELAS_P_T_H, 0);
-            }
-            for (int i = 0; i < NUM_ESTRELAS_G; i++){
-                al_draw_scaled_bitmap(spr_estrela_grande, 0, 0, SPR_ESTRELAS_G_T_W, SPR_ESTRELAS_G_T_H,
-                    estrelas_g[i].x, estrelas_g[i].y,  escala_das_estrelas * SPR_ESTRELAS_G_T_W,  escala_das_estrelas * SPR_ESTRELAS_G_T_H, 0);
-            }
-            
+            desenha_estrelas(spr_estrela_pequena, spr_estrela_grande, estrelas_p, estrelas_g, escala_das_estrelas);
 
             
             if (keys[LEFT]) {
@@ -739,10 +692,10 @@ int main() {
                     else if (atual_m->meteoro.y < -SPR_METEORO_M_T_H) atual_m->meteoro.y = SCREEN_H;
 
                     // debug desenha o colisor do meteoro
-                    al_draw_line(atual_m->meteoro.vertives[0], atual_m->meteoro.vertives[1], atual_m->meteoro.vertives[2], atual_m->meteoro.vertives[3], al_map_rgb(0, 255, 255), 2);
+                    /*al_draw_line(atual_m->meteoro.vertives[0], atual_m->meteoro.vertives[1], atual_m->meteoro.vertives[2], atual_m->meteoro.vertives[3], al_map_rgb(0, 255, 255), 2);
                     al_draw_line(atual_m->meteoro.vertives[2], atual_m->meteoro.vertives[3], atual_m->meteoro.vertives[4], atual_m->meteoro.vertives[5], al_map_rgb(0, 255, 255), 2);
                     al_draw_line(atual_m->meteoro.vertives[4], atual_m->meteoro.vertives[5], atual_m->meteoro.vertives[6], atual_m->meteoro.vertives[7], al_map_rgb(0, 255, 255), 2);
-                    al_draw_line(atual_m->meteoro.vertives[6], atual_m->meteoro.vertives[7], atual_m->meteoro.vertives[0], atual_m->meteoro.vertives[1], al_map_rgb(0, 255, 255), 2);
+                    al_draw_line(atual_m->meteoro.vertives[6], atual_m->meteoro.vertives[7], atual_m->meteoro.vertives[0], atual_m->meteoro.vertives[1], al_map_rgb(0, 255, 255), 2);*/
 
 
                     // debug pausa aqui para ver o colisor
