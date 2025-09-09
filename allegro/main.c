@@ -469,6 +469,8 @@ int main() {
     double frame_delay = 0.25; // tempo entre frames da anima��o em segundos
     float time_bala = TEMPO_ENTRE_BALAS; // tempo desde o ultimo tiro
     float time_colisions = TEMPO_ENTRE_COLISIONS; // tempo desde o ultimo tiro
+    float time_novo_meteoro = 0; // tempo desde o ultimo meteoro
+    float porcentagem_do_tempo_meteoros = 1;
     float angulo = 0;
     short vida = 3;
     int pontos = 0;
@@ -528,6 +530,7 @@ int main() {
             frame_time += 1.0 / 60.0;
 			time_bala += 1.0 / 60.0;
             time_colisions += 1.0 / 60.0;
+            time_novo_meteoro += 1.0 / 60.0;
             if (frame_time >= frame_delay) {
                 frame = (frame + 1) % FRAME_COUNT;
                 frame_time = 0;
@@ -934,6 +937,26 @@ int main() {
                 al_draw_scaled_bitmap(spr_coracao, 0, 0, SPR_CORACAO_T_W, SPR_CORACAO_T_H,
                     SCREEN_W - (i + 1) * (SPR_CORACAO_T_W * 3 + 10), 20,
                     SPR_CORACAO_T_W * 3, SPR_CORACAO_T_H * 3, 0);
+            }
+
+            //espaunar meteoros nos recantos
+            if(time_novo_meteoro > TEMPO_ENTRE_NOVOS_METEOROS*porcentagem_do_tempo_meteoros) {
+                time_novo_meteoro = 0;
+                if (porcentagem_do_tempo_meteoros > 0.1){
+                    porcentagem_do_tempo_meteoros -= 0.03; // aumenta a frequencia de meteoros com o tempo
+                }
+                
+                int edge = rand()%4; // 0=topo, 1=direita, 2=baixo, 3=esquerda
+                int posicao = rand()%SCREEN_W; // posição aleatória na borda
+                if (edge == 0){ // topo
+                    insere_meteoro(&lista_meteoros, posicao, -SPR_METEORO_G_T_H, 0, 1, METEORO_G_VIDA);
+                } else if (edge == 1){ // direita
+                    insere_meteoro(&lista_meteoros, SCREEN_W + SPR_METEORO_G_T_W, posicao, 0, 1, METEORO_G_VIDA);
+                } else if (edge == 2){ // baixo
+                    insere_meteoro(&lista_meteoros, posicao, SCREEN_H + SPR_METEORO_G_T_H, 0, 1, METEORO_G_VIDA);
+                } else{ // esquerda
+                    insere_meteoro(&lista_meteoros, -SPR_METEORO_G_T_W, posicao, 0, 1, METEORO_G_VIDA);
+                }
             }
 
             // depois eu faço

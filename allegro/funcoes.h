@@ -48,6 +48,7 @@
 #define SPR_ESTRELAS_P_T_W 4  // largura de um frame da sprite da estrela
 #define SPR_ESTRELAS_P_T_H 4  // altura de um frame da sprite da estrela
 #define NUM_ESTRELAS_P 600 // numero de estrelas
+#define TEMPO_ENTRE_NOVOS_METEOROS 10 // tempo entre novos meteoros em segundos
 
 typedef struct {
     float x, y;
