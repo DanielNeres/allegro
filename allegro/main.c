@@ -474,6 +474,7 @@ int main() {
     float angulo = 0;
     short vida = 3;
     int pontos = 0;
+    bool pause = false;
     short escala_das_estrelas = 2.3;
     ALLEGRO_COLOR color = al_map_rgb(255, 255, 255); // cor branca (padrão)
     float rotacao_por_segundo = 4.0 / 60.0;
@@ -525,7 +526,20 @@ int main() {
             case ALLEGRO_KEY_SPACE:  keys[SPACE] = false; break;
             }
         } 
-        if (ev.type == ALLEGRO_EVENT_TIMER) {
+        if (pause) {
+            if (keys[PAUSE_P]) {
+                pause = false;
+                keys[PAUSE_P] = false; // para não entrar e sair do pause várias vezes
+            }
+            // Desenha a tela de pause
+            al_draw_text(fonte, color, SCREEN_W / 2, SCREEN_H / 2 - 32, ALLEGRO_ALIGN_CENTRE, "PAUSE");
+            al_flip_display();
+            continue; // pula o resto do loop
+        } else if (keys[PAUSE_P]) {
+            pause = true;
+            keys[PAUSE_P] = false; // para não entrar e sair do pause várias vezes
+            
+        } if (ev.type == ALLEGRO_EVENT_TIMER) {
             // Atualiza frame da sprite (anima��o da nave)
             frame_time += 1.0 / 60.0;
 			time_bala += 1.0 / 60.0;
